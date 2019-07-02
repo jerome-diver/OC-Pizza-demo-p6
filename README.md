@@ -1,4 +1,5 @@
 # OpenClassRooms Path Python
+![image](pictures/capture_shell_democ_oc6.png "shell view")
 ## Projet-6 OC-Pizza
 Description:
 CLI de démonstration pour création de la base de données avec utilisateur, 
