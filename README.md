@@ -30,8 +30,11 @@ privilégié
 ##Installation
 un fichier setup.py permet d'installer l'application sur vôtre système
 ```bash
+pipenv install
+pipenv shell
 pipenv run pip install --editable .
 ```
+(n'oubliez pas de sortir de l'environnement virtuel à la fin: exit)
 ## utilisation
 l'application est équipé d'un manuel d'aide succinct:
 ```bash
