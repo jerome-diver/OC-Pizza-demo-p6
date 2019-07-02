@@ -1,0 +1,6 @@
+__pycache__/
+*.ipynb
+*.lock
+.ipynb*
+*.egg-info
+*.idea

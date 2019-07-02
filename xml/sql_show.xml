@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<sql>
+    <database>
+        <tables>
+            <list>SELECT tablename FROM pg_catalog.pg_tables
+                WHERE tableowner='oc-pizza';</list>
+            <table>
+                SELECT column_name, column_default, is_nullable, data_type
+                    FROM information_schema.columns
+                    WHERE table_schema = 'public'
+                    AND table_name   = %s;
+            </table>
+        </tables>
+        <types>
+            SELECT n.nspname AS "schema", t.typname, string_agg(
+                    e.enumlabel, '|' ORDER BY e.enumsortorder) AS enum_labels
+                FROM pg_catalog.pg_type t
+                JOIN pg_catalog.pg_namespace n ON n.oid = t.typnamespace
+                JOIN pg_catalog.pg_enum e ON t.oid = e.enumtypid
+                GROUP  BY 1,2;
+        </types>
+        <type>
+            SELECT n.nspname AS "schema", t.typname, string_agg(
+            e.enumlabel, '|' ORDER BY e.enumsortorder) AS enum_labels
+            FROM pg_catalog.pg_type t
+            JOIN pg_catalog.pg_namespace n ON n.oid = t.typnamespace
+            JOIN pg_catalog.pg_enum e ON t.oid = e.enumtypid
+            WHERE t.typname = %s
+            GROUP  BY 1,2;
+        </type>
+    </database>
+</sql>

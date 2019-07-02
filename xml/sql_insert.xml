@@ -1,0 +1,292 @@
+<?xml version="1.0"?>
+<sql>
+    <insert name="user">
+        <script>
+            INSERT INTO public.user (nom, prenom, username, photo_url, thumb, password, salt)
+            VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id;
+        </script>
+        <field name="nom" type="varchar">Quel est vôtre nom de famille ? </field>
+        <field name="prenom" type="varchar">Quel est vôtre prénom ? </field>
+        <field name="username" type="varchar">Quel sera vôtre nom d'utilisateur (8 caractères obligatoires) ? </field>
+        <field name="photo_url" type="varchar" test="image">Indiquez le fichier de vôtre photo (JPEG ou PNG): </field>
+        <field name="thumb" type="bytea" control="thumb"/>
+        <field name="password" type="bytea" control="password">Quel sera vôtre mot de passe ? </field>
+        <field name="salt" type="bytea" control="salt"/>
+        <relations type="has_many" through="user_addresses_contacts">
+            <relation table="address">Voulez-vous ajouter une addresse pour cet utilisateur ? </relation>
+            <relation table="contact">Voulez-vous ajouter un contact pour cet utilisateur ? </relation>
+        </relations>
+    </insert>
+    <insert name="address">
+        <script>
+            INSERT INTO public.address (rue_1, rue_2, cp, ville, batiment, porte, code, autre)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s) RETURNING id;
+        </script>
+        <field name="rue_1" type="varchar">Rue (1) ? </field>
+        <field name="rue_2" type="varchar">Rue (2) ? </field>
+        <field name="cp" type="varchar">Code postal ? </field>
+        <field name="ville" type="varchar">Ville ? </field>
+        <field name="batiment" type="varchar">Immeuble ? </field>
+        <field name="porte" type="varchar">Numéro de porte ? </field>
+        <field name="code" type="varchar">code d'accès ? </field>
+        <field name="autre" type="varchar">Autre chose à savoir ? </field>
+        <relations type="has_many" through="user_addresses_contacts">
+            <relation table="contact">Voulez-vous ajouter un contact pour cet adresse ? </relation>
+        </relations>
+    </insert>
+    <insert name="contact">
+        <script>
+            INSERT INTO public.contact (type, data) VALUES (%s, %s)
+            RETURNING id;
+        </script>
+        <field name="type" type="enum" t_name="contact_type">Type de contact </field>
+        <field name="data" type="varchar">Entrez la donnée: </field>
+    </insert>
+    <insert name="user_addresses_contacts">
+        <script>
+            INSERT INTO public.user_addresses_contacts
+            (user_id, address_id, contact_id) VALUES (%s, %s, %s);
+        </script>
+    </insert>
+    <insert name="restaurant">
+        <script>
+            INSERT INTO restaurant (nom, address_id, contact_id)
+            VALUES (%s, %s, %s) RETURNING id;
+        </script>
+        <field name="nom" type="varchar">Nom du restaurant: </field>
+        <relations type="has_one">
+            <relation table="address">Voulez-vous ajouter une addresse ? </relation>
+            <relation table="contact">Voulez-vous ajouter un contact ? </relation>
+        </relations>
+        <relations type="has_many" through="menu_pizza" exist="maybe">
+            <relation table="pizza">Voulez-vous ajouter une pizza au menu ?</relation>
+        </relations>
+    </insert>
+    <insert name="pizza">
+        <script>
+            INSERT INTO public.pizza (nom, description, photo_url, thumb)
+            VALUES (%s, %s, %s, %s) RETURNING id;
+        </script>
+        <field name="nom" type="varchar">Nom de la pizza ? </field>
+        <field name="description" type="varchar">Description : </field>
+        <field name="photo_url" type="varchar" test="image">Fichier de la photo : </field>
+        <field name="thumb" type="bytea" control="thumb"/>
+        <relations type="has_many" through="recipe" has_fields="yes">
+            <relation table="nutriment">Voulez-vous ajouter un ingrédient à la recette ?</relation>
+        </relations>
+        <relations type="has_many" through="price"
+                   has_fileds="yes">
+
+        </relations>
+    </insert>
+    <insert name="menu_pizza">
+        <script>
+            INSERT INTO public.menu_pizza (pizza_id, restaurant_id)
+            VALUES (%s, %s);
+        </script>
+    </insert>
+    <insert name="price">
+        <script>
+            INSERT INTO public.price (restaurant_id, pizza_id, drink_id, option_id, size_pizza, price)
+            VALUES (%s, %s, %s, %s, %s, %s) RETURNING id;
+        </script>
+        <field name="size_pizza" type="enum" t_name="pizza_size">Taille de la pizza </field>
+        <field name="price" type="numeric">Quel est le prix de vente ? </field>
+        <relations type="has_one"
+                   only_one_of="pizza_id, drink_id, option_id"
+                   ask_only_if="pizza_id, size_pizza">
+            <relation table="restaurant" exist="yes">Ce prix concerne quel restaurant ? </relation>
+            <relation table="pizza" exist="yes">Pizza concerné: </relation>
+            <relation table="drink" exist="yes">Boisson concerné: </relation>
+            <relation table="option" exist="yes">Option concerné: </relation>
+        </relations>
+    </insert>
+    <insert name="promotion">
+        <script>
+            INSERT INTO public.promotion (nom, value, date_start, date_end, enabled)
+            VALUES(%s, %S, %s, %s, %s) RETURNING id;
+        </script>
+        <field name="nom" type="varchar">Quel nom donner à cette promotion ? </field>
+        <field name="value" type="varchar">Quel pourcentage donner à cette promotion ? (entre 0 et 100)</field>
+        <field name="date_start" type="date_time">Quand démmarre cette promotion ? </field>
+        <field name="date_end" type="date_time">Quand fini cette promotion ? </field>
+        <field name="enabled" type="bool">Voulez-vous activer la promotion ?</field>
+    </insert>
+    <insert name="provider">
+        <script>
+            INSERT INTO public.provider (nom, adress_id, contact_id)
+            VALUES (%s, %s, %s) RETURNING id;
+        </script>
+        <field name="nom" type="varchar">Nom du fournisseur ? </field>
+        <relations type="has_one">
+            <relation table="address">Adresse du fournisseur: </relation>
+            <relation table="contact">Contact du fournisseur: </relation>
+        </relations>
+
+    </insert>
+    <insert name="recipe">
+        <script>
+            INSERT INTO public.recipe (pizza_id, nutriment_id, quantity, unit)
+            VALUES (%s, %s, %s, %s) RETURNING id;
+        </script>
+        <field name="quantity" type="int" constraint="1-100">Quantité voulu ? </field>
+        <field name="unit" type="enum" t_name="unity">Quelle unité ? </field>
+
+    </insert>
+    <insert name="drink">
+        <script>
+            INSERT INTO public.drink (nom, size, packaging, provider_id)
+            VALUES (%s, %s, %s, %s) RETURNING id;
+        </script>
+        <field name="nom" type="varchar">Quel nom de boisson ? </field>
+        <field name="size" type="varchar">Quelle dimension ? </field>
+        <field name="packaging">Type de conteneur ? </field>
+        <relations type="has_one">
+            <relation table="provider" exist="maybe">Fournisseur: </relation>
+        </relations>
+
+    </insert>
+    <insert name="menu_drink">
+        <script>
+            INSERT INTO public.menu_drink (drink_id, restaurant_id)
+            VALUES (%s, %s);
+        </script>
+    </insert>
+    <insert name="nutriment">
+        <script>
+            INSERT INTO public.nutriment (name, provider_id)
+            VALUES (%s, %s) RETURNING id;
+        </script>
+        <field name="nom" type="varchar">Nom de l'aliment</field>
+        <relations type="has_one">
+            <relation table="provider" exist="maybe">Quel fournisseur ? </relation>
+        </relations>
+
+    </insert>
+    <insert name="stock">
+        <script>
+            INSERT INTO public.stock (restaurant_id, nutriment_id, drink_id, quantity, unit)
+            VALUES(%s, %s, %s, %s, %s) RETURNING id;
+        </script>
+        <field name="quantity" type="int">Quelle est la quantité ? </field>
+        <field name="unit" type="enum" t_name="unity">Unité: </field>
+        <relations type="has_one">
+            <relation table="restaurant" exist="yes">Restaurent concerné par cet inventaire: </relation>
+            <relation table="nutriment" exist="yes">Aliment concerné: </relation>
+            <relation table="drink" exist="yes">Boisson concerné: </relation>
+        </relations>
+
+    </insert>
+    <insert name="option">
+        <script>
+            INSERT INTO public.option (nutriment_id, description, quantity, unit)
+            VALUES (%s, %s, %s, %s) RETURNING id;
+        </script>
+        <field name="description" type="varchar">Description de l'option: </field>
+        <field name="quantity" type="int">Quantité: </field>
+        <dield name="unit" type="enum" t_name="unity">Unité: </dield>
+        <relations type="has_one">
+            <relation table="nutriment" exist="yes">Aliment: </relation>
+        </relations>
+
+    </insert>
+    <insert name="order">
+        <script>
+            INSERT INTO public.order (restaurant_id, user_id, promotion_id, address_id, date, status, paid)
+            VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id;
+        </script>
+        <field name="date" type="date" option="this_dat"/>
+        <field name="status" type="enum" t_name="order_status"/>
+        <field name="paid" type="boolean" option="system"/>
+        <relations type="has_one">
+            <relation table="restaurant" exist="yes" control="is_connected"/>
+            <relation table="user" exist="yes" control="is_connected"/>
+            <relation table="promotion" exist="yes" control="system"/>>
+            <relation table="address" exist="yes"
+                      control="user_addresses">A quelle addresse: </relation>
+        </relations>
+
+    </insert>
+    <insert name="order_detail">
+        <script>
+            INSERT INTO pubic.order_detail (order_id, pizza_id, drink_id, promotion_id, size_pizza, status)
+            VALUES(%s, %s, %s, %s, %s, %s) RETURNING id;
+        </script>
+        <field name="size_pizza" type="enum" t_name="pizza_size"
+               constraint="pizza_id_only">Quelle taille de pizza ? </field>
+        <field name="status" type="enum" t_name="pizza_status"
+               control="system"/>
+        <relations type="has_one" constraint="pizza or drink">
+            <relation table="order" exist="yes" control="last_order"/>
+            <relation table="pizza" exist="yes">Choix de la pizza: </relation>
+            <relation table="drink" exist="yes">Choix de la boisson</relation>
+            <relation table="promotion" exist="yes"
+                      control="system"/>>
+        </relations>
+
+    </insert>
+    <insert name="order_detail_option">
+        <script>
+            INSERT INTO public.order_detail_option (order_detail_id, option_id, quantity)
+            VALUES (%s, %s, %s) RETURNING id;
+        </script>
+        <field name="quantity" type="int">Combien en voulez-vous ? </field>
+        <relations type="has_one">
+            <relation table="order_detail_id" control="last"/>
+            <relation table="option" exist="yes">Choix de l'option: </relation>
+        </relations>
+
+    </insert>
+    <insert name="promotion">
+        <script>
+            INSERT INTO public.promotion (nom, value, date_start, date_end, enabled)
+            VALUES (%s, %s, %s, %s, %s) RETURNING id;
+        </script>
+        <field name="nom" type="varchar" exist="maybe">Option: </field>
+        <field name="value" type="int" constraint="1-100" control="system"/>
+        <field name="date_start"
+               type="date"
+               role="gerant"
+               exist="maybe">Date de début de promotion ? </field>
+        <field name="date_end"
+               type="date"
+               role="gerant"
+               exist="maybe">Date de fin de promotion ? </field>
+        <field name="enabled" role="gerant" exist="maybe">Valide ? </field>
+    </insert>
+    <insert name="delivery">
+        <script>
+
+        </script>
+        <field name="" type=""></field>
+
+    </insert>
+    <insert name="hand_over">
+        <script>
+
+        </script>
+        <field name="" type=""></field>
+
+    </insert>
+    <insert name="accounting">
+        <script>
+
+        </script>
+        <field name="" type=""></field>
+
+    </insert>
+    <insert name="accounting_code">
+        <script>
+
+        </script>
+        <field name="" type=""></field>
+
+    </insert>
+    <insert name="authentication_log">
+        <script>
+
+        </script>
+        <field name="" type=""></field>
+
+    </insert>
+</sql>
