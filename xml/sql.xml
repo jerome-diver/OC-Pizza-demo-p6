@@ -549,6 +549,7 @@
             (
             id bigserial,
             code integer NOT NULL,
+            code_t character varying COLLATE pg_catalog."default" NOT NULL,
             description character varying COLLATE pg_catalog."default" NOT NULL,
             CONSTRAINT code_accounting_pkey PRIMARY KEY (id)
             ) WITH ( OIDS = FALSE )

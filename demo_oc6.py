@@ -39,7 +39,9 @@ def initialize(target):
 @click.option("--entry_list",
               help="get possible entry list for insert datas in database",
               is_flag=True)
-def create(target, entry_list):
+@click.option("--from_csv", help="Insert from a csv formed file",
+              type=str, required=False)
+def create(target, entry_list, from_csv):
     '''Insert mode for CRUD model to record inside target table'''
 
     from dialog import Creator
@@ -48,7 +50,7 @@ def create(target, entry_list):
         You have to respect order of entries, and by the fact, it is logic:
         1/ 'user'
         2/ 'provider'
-        3/ 'accounting_code'
+        3/ 'code_accounting'
         4/ 'nutriment', 'drink', 'option', 'pizza'
         5/ 'restaurant'
         6/ 'hand_over', 'order'
@@ -58,7 +60,10 @@ def create(target, entry_list):
         Having fun...
         """)
     else:
-        create_records = Creator(target)
+        if from_csv:
+            create_records = Creator(target, file=from_csv, type_file="csv")
+        else:
+            create_records = Creator(target)
         click.echo(create_records.messages)
 
 

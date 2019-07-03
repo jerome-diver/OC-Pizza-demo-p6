@@ -14,7 +14,7 @@ class Creator:
 
     YES = re.compile(r'o|y|oui|yes', re.IGNORECASE)
 
-    def __init__(self, target):
+    def __init__(self, target, file=None, type_file=None):
 
         self._sql = SQLInsertRequest()
         self._db = Database()
@@ -22,13 +22,34 @@ class Creator:
         self._messages = ""
         self._relational_values = []
         self._entry = TableEntry(target)
-        self.record()
+        if not file:
+            self.record()
+        else:
+            self.record_from_file(target, file, type_file)
 
     @property
     def messages(self):
         """Property for get messages status"""
 
         return self._messages
+
+    def record_from_file(self, target, file, type_file):
+        """Record data from file content list of entries"""
+
+        if type_file == "csv":
+            char_separator = input("Quelle est le caractère de "
+                                   "séparation du fichier CSV svp ? ")
+            PCG = []
+            with open(file, 'r') as pcg:
+                for line in pcg:
+                    PCG.append(tuple(line.strip().split(char_separator)))
+            request = self._sql.table(target, "script")
+            for pcg_values in PCG:
+                print(pcg_values)
+                id = self._db.request(request, pcg_values, ask=True)
+                print(id)
+                self._messages += f"Nouvelle enregistrement dans la table " \
+                    f"{target}  à l'id: {id[0]}\n"
 
     def record(self):
         """Create user record"""

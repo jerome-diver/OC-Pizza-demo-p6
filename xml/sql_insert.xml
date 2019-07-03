@@ -275,12 +275,14 @@
         <field name="" type=""></field>
 
     </insert>
-    <insert name="accounting_code">
+    <insert name="code_accounting">
         <script>
-
+            INSERT INTO public.code_accounting (code, code_t, description)
+            VALUES (%s, %s, %s) RETURNING id;
         </script>
-        <field name="" type=""></field>
-
+        <field name="numero" type="varchar">Numéro comptable: </field>
+        <field name="code_t" type="varchar">type de code (base, abbrégé, étendu): </field>
+        <field name="description" type="varchar">Description du type de transaction comptable de ce numéro: </field>
     </insert>
     <insert name="authentication_log">
         <script>
