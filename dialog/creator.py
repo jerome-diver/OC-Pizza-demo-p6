@@ -35,26 +35,35 @@ class Creator:
 
         message, id = self._new_table_record(self._entry)
         self._messages += message
-        message = self._collect_many_relations(self._entry.has_many)
-        self._messages += message
-        message = self._record_links(id)
+        if self._entry.has_many:
+            message = self._collect_many_relations(self._entry.has_many)
+            self._messages += message
+            message = self._record_has_many_links(id)
+            self._messages += message
         self._messages += message
 
     def _new_table_record(self, entry) -> (str, int):
         """Record new table from fields"""
 
         id = None
+        message = ""
         while not id:
             values = self._get_fields_values_for(entry.fields)
+            if entry.has_one:
+                for has_one in entry.has_one:
+                    ho_message, ho_id = self._new_table_record(
+                        has_one["entry"])
+                    message += ho_message
+                    values.append(ho_id)
             id = self._db.request(entry.request, tuple(values),
                                   ask=True)[0][0]
-        message = f"Ajout de l'enregistrement "\
+        message += f"Ajout de l'enregistrement "\
                   f"dans la table: '{str(entry)}' "\
                   f"à l'ID: {id}\n"
         return message , id
 
     def _collect_many_relations(self, relations) -> str:
-        """Add relations 'many-to-many' records"""
+        """Add relations 'many-to-many' records and return message"""
 
         messages = ""
         for index, relation in enumerate(relations):
@@ -115,7 +124,7 @@ class Creator:
             message, rec_id = self._new_table_record(entry)
         return message, rec_id
 
-    def _record_links(self, target_id) -> str:
+    def _record_has_many_links(self, target_id) -> str:
         """Record relations ids inside relational table of master
         record target"""
 

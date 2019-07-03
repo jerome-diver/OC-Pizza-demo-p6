@@ -35,13 +35,31 @@ def initialize(target):
 
 @cli.command()
 @click.option("--target", help='Create a new record inside target existing '
-                             'table', type=str, required=True)
-def create(target):
+                             'table', type=str, required=False)
+@click.option("--entry_list",
+              help="get possible entry list for insert datas in database",
+              is_flag=True)
+def create(target, entry_list):
     '''Insert mode for CRUD model to record inside target table'''
 
     from dialog import Creator
-    create_records = Creator(target)
-    click.echo(create_records.messages)
+    if entry_list:
+        click.echo("""
+        You have to respect order of entries, and by the fact, it is logic:
+        1/ 'user'
+        2/ 'provider'
+        3/ 'accounting_code'
+        4/ 'nutriment', 'drink', 'option', 'pizza'
+        5/ 'restaurant'
+        6/ 'hand_over', 'order'
+        
+        The other one tables will be populate by your answers at 
+        asked questions tags during creation process. 
+        Having fun...
+        """)
+    else:
+        create_records = Creator(target)
+        click.echo(create_records.messages)
 
 
 @cli.command()
@@ -49,8 +67,9 @@ def create(target):
 @click.option("--table", help="show table fields list", type=str)
 @click.option("--types", help="Show types list and values", is_flag=True)
 def inspect(tables, table, types):
-    """Inspecte les métadonnées:
-    noms de tables, colonnes d'une table, types spécifiques """
+    """Show metadata of database 'oc-pizza':
+    tables names, table's fields details, user's types list,
+    specific named user's type enum content"""
 
     from dialog import Inspector
     inspect = Inspector()
@@ -71,8 +90,7 @@ def inspect(tables, table, types):
               help="Show records in line instead of table view",
               is_flag=True)
 def show(table, condition, inline):
-    """Show SELECT statement for given table name with optional
-    conditions"""
+    """Show content for given table name with optional conditions"""
 
     from dialog import Reader
     if table:

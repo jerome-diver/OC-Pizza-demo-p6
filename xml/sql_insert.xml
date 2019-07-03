@@ -48,6 +48,18 @@
             (user_id, address_id, contact_id) VALUES (%s, %s, %s);
         </script>
     </insert>
+    <insert name="provider">
+        <script>
+            INSERT INTO public.provider (nom, address_id, contact_id)
+            VALUES (%s, %s, %s) RETURNING id;
+        </script>
+        <field name="nom" type="varchar">Nom du fournisseur ? </field>
+        <relations type="has_one">
+            <relation table="address">Adresse du fournisseur: </relation>
+            <relation table="contact">Contact du fournisseur: </relation>
+        </relations>
+
+    </insert>
     <insert name="restaurant">
         <script>
             INSERT INTO restaurant (nom, address_id, contact_id)
@@ -111,18 +123,6 @@
         <field name="date_start" type="date_time">Quand démmarre cette promotion ? </field>
         <field name="date_end" type="date_time">Quand fini cette promotion ? </field>
         <field name="enabled" type="bool">Voulez-vous activer la promotion ?</field>
-    </insert>
-    <insert name="provider">
-        <script>
-            INSERT INTO public.provider (nom, adress_id, contact_id)
-            VALUES (%s, %s, %s) RETURNING id;
-        </script>
-        <field name="nom" type="varchar">Nom du fournisseur ? </field>
-        <relations type="has_one">
-            <relation table="address">Adresse du fournisseur: </relation>
-            <relation table="contact">Contact du fournisseur: </relation>
-        </relations>
-
     </insert>
     <insert name="recipe">
         <script>
