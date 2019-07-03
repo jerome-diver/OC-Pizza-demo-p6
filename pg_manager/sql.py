@@ -210,3 +210,10 @@ class SQLShowRequest(SQL):
         type_node = db_node.find("type")
         return type_node.text
 
+    def table(self, table):
+        """return table request for show table content records"""
+
+        tables = self._root.find("tables")
+        table_ = tables.find(f"table[@name='{table}']")
+        request = table_.text
+        return request

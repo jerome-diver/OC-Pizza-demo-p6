@@ -62,5 +62,25 @@ def inspect(tables, table, types):
         click.echo(inspect.types())
 
 
+@cli.command()
+@click.option("--table", help="Show table content", type=str)
+@click.option("--condition",
+              help="Show table content whith condition,",
+              type=str)
+@click.option("--inline",
+              help="Show records in line instead of table view",
+              is_flag=True)
+def show(table, condition, inline):
+    """Show SELECT statement for given table name with optional
+    conditions"""
+
+    from dialog import Reader
+    if table:
+        read_records = Reader(table, inline)
+    if condition:
+        read_records.conditions(condition)
+    click.echo(read_records.message)
+
+
 if __name__ == '__main__':
     cli()

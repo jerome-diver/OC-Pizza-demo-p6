@@ -13,7 +13,7 @@ privilégié
 - créer les tables de la base de donnée
 - lire les méta-données des tables (champs et types)
 - insérer des données dans le tables interactivement
-- Lire les données d'une table (requête SELECT sans condition)
+- Lire les données d'une table (avec ou sans condition)
 ## Outils
 - Base de donnée Postgresql
 - Python-3.7

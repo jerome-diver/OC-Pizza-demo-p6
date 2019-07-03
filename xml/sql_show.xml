@@ -29,4 +29,9 @@
             GROUP  BY 1,2;
         </type>
     </database>
+    <tables>
+        <table name="user">
+            SELECT * FROM public.user
+        </table>
+    </tables>
 </sql>

@@ -24,7 +24,8 @@ class Database():
         if self.connector:
             self.connector.close()
 
-    def request(self, request, values=None, ask=False) -> bool:
+    def request(self, request, values=None,
+                ask=False, with_headers=False):
         """Send a request without any record, and return statement of
         transaction"""
 
@@ -49,6 +50,9 @@ class Database():
             else:
                 if ask:
                     records = cursor.fetchall()
+                if with_headers:
+                    colnames = [desc[0] for desc in cursor.description]
+                    records.insert(0, colnames)
                 else:
                     test = True
         finally:
