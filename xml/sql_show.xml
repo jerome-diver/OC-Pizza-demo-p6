@@ -3,7 +3,7 @@
     <database>
         <tables>
             <list>SELECT tablename FROM pg_catalog.pg_tables
-                WHERE tableowner='oc-pizza';</list>
+                WHERE tableowner='oc-pizza' ORDER by tablename;</list>
             <table>
                 SELECT column_name, column_default, is_nullable, data_type
                     FROM information_schema.columns
@@ -30,8 +30,77 @@
         </type>
     </database>
     <tables>
+        <table name="accounting">
+            SELECT * FROM public.accounting
+        </table>
+        <table name="address">
+            SELECT * FROM public.address
+        </table>
+        <table name="authentication_log">
+            SELECT * FROM public.authentication_log
+        </table>
+        <table name="code_accounting">
+            SELECT * FROM public.code_accounting
+        </table>
+        <table name="contact">
+            SELECT * FROM public.contact
+        </table>
+        <table name="delivery">
+            SELECT * FROM public.delivery
+        </table>
+        <table name="drink">
+            SELECT * FROM public.drink
+        </table>
+        <table name="hand_over">
+            SELECT * FROM public.hand_over
+        </table>
+        <table name="menu_drink">
+            SELECT * FROM public.menu_drink
+        </table>
+        <table name="menu_pizza">
+            SELECT * FROM public.menu_pizza
+        </table>
+        <table name="nutriment">
+            SELECT * FROM public.nutriment
+        </table>
+        <table name="option">
+            SELECT * FROM public.option
+        </table>
+        <table name="order">
+            SELECT * FROM public.order
+        </table>
+        <table name="order_detail">
+            SELECT * FROM public.order_detail
+        </table>
+        <table name="order_detail_option">
+            SELECT * FROM public.order_detail_option
+        </table>
+        <table name="pizza">
+            SELECT * FROM public.pizza
+        </table>
+        <table name="price">
+            SELECT * FROM public.price
+        </table>
+        <table name="promotion">
+            SELECT * FROM public.promotion
+        </table>
+        <table name="provider">
+            SELECT * FROM public.provider
+        </table>
+        <table name="recipe">
+            SELECT * FROM public.recipe
+        </table>
+        <table name="restaurant">
+            SELECT * FROM public.restaurant
+        </table>
+        <table name="stock">
+            SELECT * FROM public.stock
+        </table>
         <table name="user">
             SELECT * FROM public.user
+        </table>
+        <table name="user_addresses_contacts">
+            SELECT * FROM public.user_addresses_contacts
         </table>
     </tables>
 </sql>
