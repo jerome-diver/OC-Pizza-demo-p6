@@ -263,7 +263,7 @@
             id bigserial,
             nom character varying NOT NULL,
             size character varying NOT NULL,
-            pakaging character varying NOT NULL,
+            packaging character varying NOT NULL,
             provider_id bigint NOT NULL,
             PRIMARY KEY (id),
             CONSTRAINT drink_provider_id FOREIGN KEY (provider_id)

@@ -51,9 +51,10 @@ def create(target, entry_list, from_csv):
         1/ 'user'
         2/ 'provider'
         3/ 'code_accounting'
-        4/ 'nutriment', 'drink', 'option', 'pizza'
-        5/ 'restaurant'
-        6/ 'hand_over', 'order'
+        4/ 'nutriment', 'drink' 
+        5/ 'option', 'pizza'
+        6/ 'restaurant', 'stock'
+        7/ 'hand_over', 'order'
         
         The other one tables will be populate by your answers at 
         asked questions tags during creation process. 

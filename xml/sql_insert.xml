@@ -60,18 +60,53 @@
         </relations>
 
     </insert>
-    <insert name="restaurant">
+    <insert name="code_accounting">
         <script>
-            INSERT INTO restaurant (nom, address_id, contact_id)
+            INSERT INTO public.code_accounting (code, code_t, description)
             VALUES (%s, %s, %s) RETURNING id;
         </script>
-        <field name="nom" type="varchar">Nom du restaurant: </field>
+        <field name="code" type="varchar">Numéro comptable: </field>
+        <field name="code_t" type="varchar">type de code (base, abbrégé, étendu): </field>
+        <field name="description" type="varchar">Description du type de transaction comptable de ce numéro: </field>
+    </insert>
+    <insert name="nutriment">
+        <script>
+            INSERT INTO public.nutriment (nom, provider_id)
+            VALUES (%s, %s) RETURNING id;
+        </script>
+        <field name="nom" type="varchar">Nom de l'aliment: </field>
         <relations type="has_one">
-            <relation table="address">Voulez-vous ajouter une addresse ? </relation>
-            <relation table="contact">Voulez-vous ajouter un contact ? </relation>
+            <relation table="provider"
+                      exist="maybe"
+                      show="nom">Quel fournisseur ? </relation>
         </relations>
-        <relations type="has_many" through="menu_pizza" exist="maybe">
-            <relation table="pizza">Voulez-vous ajouter une pizza au menu ?</relation>
+    </insert>
+    <insert name="drink">
+        <script>
+            INSERT INTO public.drink (nom, size, packaging, provider_id)
+            VALUES (%s, %s, %s, %s) RETURNING id;
+        </script>
+        <field name="nom" type="varchar">Quel nom de boisson ? </field>
+        <field name="size" type="varchar">Quelle dimension ? </field>
+        <field name="packaging" type="varchar">Type de conteneur ? </field>
+        <relations type="has_one">
+            <relation table="provider"
+                      exist="maybe"
+                      show="nom">Quel fournisseur ? </relation>
+        </relations>
+
+    </insert>
+    <insert name="option">
+        <script>
+            INSERT INTO public.option (nutriment_id, description, quantity, unit)
+            VALUES (%s, %s, %s, %s) RETURNING id;
+        </script>
+        <field name="description" type="varchar">Description de l'option: </field>
+        <field name="quantity" type="int">Quantité: </field>
+        <field name="unit" type="enum" t_name="unity">Unité: </field>
+        <relations type="has_one">
+            <relation table="nutriment"
+                      exist="yes" show="nom">Aliment concerné par l'option: </relation>
         </relations>
     </insert>
     <insert name="pizza">
@@ -89,6 +124,20 @@
         <relations type="has_many" through="price"
                    has_fileds="yes">
 
+        </relations>
+    </insert>
+    <insert name="restaurant">
+        <script>
+            INSERT INTO restaurant (nom, address_id, contact_id)
+            VALUES (%s, %s, %s) RETURNING id;
+        </script>
+        <field name="nom" type="varchar">Nom du restaurant: </field>
+        <relations type="has_one">
+            <relation table="address">Voulez-vous ajouter une addresse ? </relation>
+            <relation table="contact">Voulez-vous ajouter un contact ? </relation>
+        </relations>
+        <relations type="has_many" through="menu_pizza" exist="maybe">
+            <relation table="pizza">Voulez-vous ajouter une pizza au menu ?</relation>
         </relations>
     </insert>
     <insert name="menu_pizza">
@@ -133,35 +182,11 @@
         <field name="unit" type="enum" t_name="unity">Quelle unité ? </field>
 
     </insert>
-    <insert name="drink">
-        <script>
-            INSERT INTO public.drink (nom, size, packaging, provider_id)
-            VALUES (%s, %s, %s, %s) RETURNING id;
-        </script>
-        <field name="nom" type="varchar">Quel nom de boisson ? </field>
-        <field name="size" type="varchar">Quelle dimension ? </field>
-        <field name="packaging">Type de conteneur ? </field>
-        <relations type="has_one">
-            <relation table="provider" exist="maybe">Fournisseur: </relation>
-        </relations>
-
-    </insert>
     <insert name="menu_drink">
         <script>
             INSERT INTO public.menu_drink (drink_id, restaurant_id)
             VALUES (%s, %s);
         </script>
-    </insert>
-    <insert name="nutriment">
-        <script>
-            INSERT INTO public.nutriment (name, provider_id)
-            VALUES (%s, %s) RETURNING id;
-        </script>
-        <field name="nom" type="varchar">Nom de l'aliment</field>
-        <relations type="has_one">
-            <relation table="provider" exist="maybe">Quel fournisseur ? </relation>
-        </relations>
-
     </insert>
     <insert name="stock">
         <script>
@@ -174,19 +199,6 @@
             <relation table="restaurant" exist="yes">Restaurent concerné par cet inventaire: </relation>
             <relation table="nutriment" exist="yes">Aliment concerné: </relation>
             <relation table="drink" exist="yes">Boisson concerné: </relation>
-        </relations>
-
-    </insert>
-    <insert name="option">
-        <script>
-            INSERT INTO public.option (nutriment_id, description, quantity, unit)
-            VALUES (%s, %s, %s, %s) RETURNING id;
-        </script>
-        <field name="description" type="varchar">Description de l'option: </field>
-        <field name="quantity" type="int">Quantité: </field>
-        <dield name="unit" type="enum" t_name="unity">Unité: </dield>
-        <relations type="has_one">
-            <relation table="nutriment" exist="yes">Aliment: </relation>
         </relations>
 
     </insert>
@@ -274,15 +286,6 @@
         </script>
         <field name="" type=""></field>
 
-    </insert>
-    <insert name="code_accounting">
-        <script>
-            INSERT INTO public.code_accounting (code, code_t, description)
-            VALUES (%s, %s, %s) RETURNING id;
-        </script>
-        <field name="numero" type="varchar">Numéro comptable: </field>
-        <field name="code_t" type="varchar">type de code (base, abbrégé, étendu): </field>
-        <field name="description" type="varchar">Description du type de transaction comptable de ce numéro: </field>
     </insert>
     <insert name="authentication_log">
         <script>

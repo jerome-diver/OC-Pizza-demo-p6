@@ -45,9 +45,7 @@ class Creator:
                     PCG.append(tuple(line.strip().split(char_separator)))
             request = self._sql.table(target, "script")
             for pcg_values in PCG:
-                print(pcg_values)
                 id = self._db.request(request, pcg_values, ask=True)
-                print(id)
                 self._messages += f"Nouvelle enregistrement dans la table " \
                     f"{target}  à l'id: {id[0]}\n"
 
@@ -61,7 +59,6 @@ class Creator:
             self._messages += message
             message = self._record_has_many_links(id)
             self._messages += message
-        self._messages += message
 
     def _new_table_record(self, entry) -> (str, int):
         """Record new table from fields"""
@@ -72,8 +69,12 @@ class Creator:
             values = self._get_fields_values_for(entry.fields)
             if entry.has_one:
                 for has_one in entry.has_one:
-                    ho_message, ho_id = self._new_table_record(
-                        has_one["entry"])
+                    if has_one["exist"]:
+                        ho_message, ho_id = self._get_maybe_existing_record(
+                            has_one)
+                    else:
+                        ho_message, ho_id = self._new_table_record(
+                            has_one["entry"])
                     message += ho_message
                     values.append(ho_id)
             id = self._db.request(entry.request, tuple(values),
@@ -82,6 +83,40 @@ class Creator:
                   f"dans la table: '{str(entry)}' "\
                   f"à l'ID: {id}\n"
         return message , id
+
+    def _get_maybe_existing_record(self, has_one) -> (str, int):
+        """Return message and id for new or existing table record"""
+
+        message = None
+        id = 0
+        if has_one["exist"] == "maybe":
+            choices = self._show_existing_records(
+                has_one["table"], has_one["show"])
+            answer = input(has_one["question"])
+            if answer==choices[-1]:
+                message, id = self._new_table_record(has_one["entry"])
+            else:
+                id = choices[int(answer) - 1]
+                message = f"Valeur de relation choisie: " \
+                    f"{has_one['table']}, id: {id}\n"
+        return message, id
+
+    def _show_existing_records(self, table, field):
+        """Print enumerated list of fields 'field' existing 'table' records
+            and return a list of id and 'n': [id,.....,'n']"""
+
+        choices = []
+        sql = SQLShowRequest()
+        sub_request = sql.table(table)
+        request = re.sub(r'\*', f"id, {field}", sub_request)
+        records = self._db.request(request, ask=True)
+        for n, record in enumerate(records):
+            choices.append(int(record[0]))
+            string = "%3s) %s" % (n+1, record[1])
+            print(string)
+        choices.append("n")
+        print("  n) -- Nouveau fournisseur --")
+        return choices
 
     def _collect_many_relations(self, relations) -> str:
         """Add relations 'many-to-many' records and return message"""

@@ -129,11 +129,12 @@ class SQLInsertRequest(SQL):
                     if type:
                         for relation in relations.findall("relation"):
                             dico = dict(
-                                table= relation.get("table"),
-                                question= relation.text)
+                                table=relation.get("table"),
+                                question=relation.text,
+                                exist=relation.get("exist"),
+                                show=relation.get("show"))
                             if type == "has_many":
                                 dico["through"] = relations.get("through")
-                                dico["ids"] = []
                             relations_dico[type].append(dico)
                 break
         if extract not in extract_able:
