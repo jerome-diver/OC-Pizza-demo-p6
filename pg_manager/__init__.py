@@ -3,3 +3,4 @@
 from .sql import SQL, SQLCreateRequest, SQLInsertRequest, SQLShowRequest
 from .database import Database
 from .pg_creator import OCPizzaCreator
+from .factories import NewUser, NewHasOne, Record

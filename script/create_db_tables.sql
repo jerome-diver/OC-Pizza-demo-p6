@@ -99,14 +99,16 @@ COMMENT ON TABLE public.address
 CREATE TABLE public.contact
 (
     id bigserial,
+    type contact_type NOT NULL,
     data character varying COLLATE pg_catalog."default" NOT NULL,
-    CONSTRAINT contact_pkey PRIMARY KEY (id)
+    CONSTRAINT contact_pkey PRIMARY KEY (id),
+    CONSTRAINT contact_uniq_data UNIQUE (data)
 ) WITH ( OIDS = FALSE )
 TABLESPACE pg_default;
 ALTER TABLE public.contact OWNER to "oc-pizza";
 COMMENT ON TABLE public.contact
     IS 'Liste de contacts';
-/* Create relational many-to-many table user_addresses_contacts */
+/* Create relational table user_addresses_contacts */
 CREATE TABLE IF NOT EXISTS public.user_addresses_contacts
 (
     user_id bigint NOT NULL,
@@ -225,6 +227,7 @@ CREATE TABLE IF NOT EXISTS  public.nutriment
     nom character varying NOT NULL,
     provider_id bigint NOT NULL,
     PRIMARY KEY (id),
+    CONSTRAINT nutriment_uniq_nom__provider_id UNIQUE (nom, provider_id),
     CONSTRAINT nutriment_provider_id FOREIGN KEY (provider_id)
         REFERENCES public.provider (id) MATCH SIMPLE
         ON UPDATE CASCADE
@@ -258,9 +261,9 @@ COMMENT ON CONSTRAINT drink_provider_id ON public.drink
 CREATE TABLE IF NOT EXISTS public.stock
 (
     id bigserial,
+    restaurant_id bigint NOT NULL,
     nutriment_id bigint,
     drink_id bigint,
-    restaurant_id bigint NOT NULL,
     quantity numeric(6,2) NOT NULL,
     unit unity NOT NULL,
     CONSTRAINT stock_pkey PRIMARY KEY (id),
@@ -312,54 +315,7 @@ COMMENT ON CONSTRAINT pizza_uniq_nom ON public.pizza
     IS 'le nom de la pizza est unique';
 COMMENT ON CONSTRAINT pizza_uniq_photo_url ON public.pizza
     IS 'le nom du fichier de la photo est unique (il est généré par le système)'
-/*  Create table menu_pizza */
-CREATE TABLE IF NOT EXISTS public.menu_pizzas
-(
-    pizza_id bigint NOT NULL,
-    restaurant_id bigint NOT NULL,
-    CONSTRAINT menu_pizza_uniq_links UNIQUE (pizza_id, restaurant_id),
-    CONSTRAINT menu_pizza_restaurant_id FOREIGN KEY (restaurant_id)
-        REFERENCES public.restaurant (id) MATCH SIMPLE
-        ON UPDATE CASCADE
-        ON DELETE NO ACTION,
-    CONSTRAINT menu_pizza__pizza_id FOREIGN KEY (pizza_id)
-        REFERENCES public.pizza (id) MATCH SIMPLE
-        ON UPDATE CASCADE
-        ON DELETE NO ACTION
-) WITH ( OIDS = FALSE );
-ALTER TABLE public.menu_pizzas OWNER to "oc-pizza";
-COMMENT ON TABLE public.menu_pizzas
-    IS 'Table relationnelle plusieurs-plusieurs entre les pizzas et les restaurant (constituant: le menu des pizzas du restaurant).';
-COMMENT ON CONSTRAINT menu_pizza_uniq_links ON public.menu_pizzas
-    IS 'Les entrées sont uniques';
-COMMENT ON CONSTRAINT menu_pizza_restaurant_id ON public.menu_pizzas
-    IS 'Lien vers le resataurant';
-COMMENT ON CONSTRAINT menu_pizza__pizza_id ON public.menu_pizzas
-    IS 'Lien vers la pizza';
-/*  Create table menu_drink */
-CREATE TABLE IF NOT EXISTS public.menu_drink
-(
-    drink_id bigint NOT NULL,
-    restaurant_id bigint NOT NULL,
-    CONSTRAINT menu_drink_uniq_entries UNIQUE (drink_id, restaurant_id),
-    CONSTRAINT menu_drink_drink_id FOREIGN KEY (drink_id)
-        REFERENCES public.drink (id) MATCH SIMPLE
-        ON UPDATE CASCADE
-        ON DELETE NO ACTION,
-    CONSTRAINT menu_drink_restaurant_id FOREIGN KEY (restaurant_id)
-        REFERENCES public.restaurant (id) MATCH SIMPLE
-        ON UPDATE CASCADE
-        ON DELETE NO ACTION
-) WITH ( OIDS = FALSE );
-ALTER TABLE public.menu_drink OWNER to "oc-pizza";
-COMMENT ON TABLE public.menu_drink
-    IS 'Table relationnelle représentant le menu des boissons';
-COMMENT ON CONSTRAINT menu_drink_uniq_entries ON public.menu_drink
-    IS 'Les entrées sont uniques';
-COMMENT ON CONSTRAINT menu_drink_drink_id ON public.menu_drink
-    IS 'Lien vers les boissons';
-COMMENT ON CONSTRAINT menu_drink_restaurant_id ON public.menu_drink
-    IS 'Lien vers le restaurant concerné';
+
 /*  Create table recipe */
 CREATE TABLE IF NOT EXISTS public.recipe
 (
@@ -430,14 +386,18 @@ COMMENT ON CONSTRAINT order_user_id ON public."order"
 /*  Create table order_detail */
 CREATE TABLE IF NOT EXISTS public.order_detail
 (
-    id bigserial,
     order_id bigint NOT NULL,
     pizza_id bigint,
+    drink_id bigint,
+    option_id bigint NOT NULL,
     promotion_id bigint NOT NULL,
     status pizza_status NOT NULL DEFAULT 'en attente'::pizza_status,
     size pizza_size NOT NULL DEFAULT 'individuelle'::pizza_size,
-    drink_id bigint,
-    CONSTRAINT order_detail_pkey PRIMARY KEY (id),
+    quantity smallint NOT NULL DEFAULT 1,
+    CONSTRAINT order_detail_option_id FOREIGN KEY (option_id)
+        REFERENCES public.option (id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
     CONSTRAINT order_detail_drink_id FOREIGN KEY (drink_id)
         REFERENCES public.drink (id) MATCH SIMPLE
         ON UPDATE NO ACTION
@@ -490,17 +450,15 @@ COMMENT ON TABLE public.option
     IS 'Options possibles (extra sur pizza)';
 COMMENT ON CONSTRAINT option_nutriment_id ON public.option
     IS 'Lien vers l''aliment';
-/*  Create table price */
+/*  Create table menus_price */
 CREATE TABLE IF NOT EXISTS public.price
 (
-    id bigserial,
     restaurant_id bigint NOT NULL,
     pizza_id bigint,
     drink_id bigint,
     option_id bigint,
     price numeric(4,2) NOT NULL,
     size_pizza pizza_size,
-    CONSTRAINT price_pkey PRIMARY KEY (id),
     CONSTRAINT price_drink_id FOREIGN KEY (drink_id)
         REFERENCES public.drink (id) MATCH SIMPLE
         ON UPDATE NO ACTION
@@ -518,46 +476,25 @@ CREATE TABLE IF NOT EXISTS public.price
       CHECK (pizza_id IS NULL AND size_pizza IS NULL OR pizza_id IS NOT NULL AND size_pizza IS NOT NULL) NOT VALID
 ) WITH ( OIDS = FALSE )
 TABLESPACE pg_default;
-ALTER TABLE public.price OWNER to "oc-pizza";
-COMMENT ON TABLE public.price
+ALTER TABLE public.menus_price OWNER to "oc-pizza";
+COMMENT ON TABLE public.menus_price
     IS 'La liste des prix';
-COMMENT ON CONSTRAINT price_drink_id ON public.price
+COMMENT ON CONSTRAINT price_drink_id ON public.menus_price
     IS 'Lien vers la boisson';
-COMMENT ON CONSTRAINT price_option_id ON public.price
+COMMENT ON CONSTRAINT price_option_id ON public.menus_price
     IS 'Lien vers l''option';
-COMMENT ON CONSTRAINT price_pizza_id ON public.price
+COMMENT ON CONSTRAINT price_pizza_id ON public.menus_price
     IS 'Lien ver la pizza';
-COMMENT ON CONSTRAINT price_pizza_xor_drink_xor_option ON public.price
+COMMENT ON CONSTRAINT price_pizza_xor_drink_xor_option ON public.menus_price
     IS 'Au choix, le prix ne peut concerner que l''un ou l''autre: une pizza, une boisson ou une option';
-COMMENT ON CONSTRAINT price_pizza_id_and_pizza_size ON public.price
+COMMENT ON CONSTRAINT price_pizza_id_and_pizza_size ON public.menus_price
     IS 'Quand il y a un lien vers une pizza, il doit y avoir une dimension de pizza fourni pour obtenir un prix.';
-/*  Create table order_detail_option */
-CREATE TABLE IF NOT EXISTS public.order_detail_option
-(
-    order_detail_id bigint NOT NULL,
-    option_id bigint NOT NULL,
-    quantity smallint NOT NULL DEFAULT 1,
-    CONSTRAINT order_detail_option_order_detail_id FOREIGN KEY (order_detail_id)
-        REFERENCES public.order_detail (id) MATCH SIMPLE
-        ON UPDATE NO ACTION
-        ON DELETE NO ACTION,
-    CONSTRAINT order_detail_option_option_id FOREIGN KEY (option_id)
-        REFERENCES public.option (id) MATCH SIMPLE
-        ON UPDATE NO ACTION
-        ON DELETE NO ACTION
-) WITH ( OIDS = FALSE );
-ALTER TABLE public.order_detail_option OWNER to "oc-pizza";
-COMMENT ON TABLE public.order_detail_option
-    IS 'Options de commande sur le détail (une pizza peut avoir en option un ou des rajouts: oeuf ou extra, etc...)';
-COMMENT ON CONSTRAINT order_detail_option_order_detail_id ON public.order_detail_option
-    IS 'Lien vers le détail de la commande (la pizza concerné)';
-COMMENT ON CONSTRAINT order_detail_option_option_id ON public.order_detail_option
-    IS 'Lien vers l''option à rajouter';
 /* Create table code_accounting */
 CREATE TABLE IF NOT EXISTS public.code_accounting
 (
     id bigserial,
     code integer NOT NULL,
+    code_t character(6) NOT NULL,
     description character varying COLLATE pg_catalog."default" NOT NULL,
     CONSTRAINT code_accounting_pkey PRIMARY KEY (id)
 ) WITH ( OIDS = FALSE )

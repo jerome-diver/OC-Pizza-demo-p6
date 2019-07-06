@@ -1,7 +1,6 @@
 """Convert data type or format or form to be able to insert in database"""
 
 from PIL import Image
-from os.path import splitext, abspath
 from io import BytesIO
 from uuid import uuid4
 from hashlib import sha512
@@ -15,11 +14,13 @@ class Convert():
         self._salt: bytes = None
 
     def thumb(self, image_file):
-        """Return new filename thumbnail and byte content data to insert
-        inside Postgresql bytea field type"""
+        """Return new filename thumbnail
+        and byte content data to insert
+        inside Postgresql bytea field's type"""
 
         img_file = Path(image_file)
-        thumb_file = img_file.stem + "_thumb" + img_file.suffix
+        thumb_file = img_file.parent + img_file.stem + \
+                     "_thumb" + img_file.suffix
         format = "PNG" if img_file.suffix == ".png" else "JPEG"
         image = Image.open(image_file)
         image.thumbnail((64,64))

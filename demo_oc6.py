@@ -44,17 +44,16 @@ def initialize(target):
 def create(target, entry_list, from_csv):
     '''Insert mode for CRUD model to record inside target table'''
 
-    from dialog import Creator
+    from pg_manager import Record
     if entry_list:
         click.echo("""
         You have to respect order of entries, and by the fact, it is logic:
         1/ 'user'
-        2/ 'provider'
-        3/ 'code_accounting'
-        4/ 'nutriment', 'drink' 
-        5/ 'option', 'pizza'
-        6/ 'restaurant', 'stock'
-        7/ 'hand_over', 'order'
+        2/ 'provider', 'promotion', 'code_accounting'
+        3/ 'nutriment', 'drink', 'option' 
+        4/ 'pizza'
+        5/ 'restaurant', 'stock'
+        6/ 'hand_over', 'order'
         
         The other one tables will be populate by your answers at 
         asked questions tags during creation process. 
@@ -62,10 +61,10 @@ def create(target, entry_list, from_csv):
         """)
     else:
         if from_csv:
-            create_records = Creator(target, file=from_csv, type_file="csv")
+            new_records = Record(target, file=from_csv, type_file="csv")
         else:
-            create_records = Creator(target)
-        click.echo(create_records.messages)
+            new_records = Record(target)
+        click.echo(new_records.show_messages())
 
 
 @cli.command()

@@ -55,10 +55,20 @@
         </script>
         <field name="nom" type="varchar">Nom du fournisseur ? </field>
         <relations type="has_one">
-            <relation table="address">Adresse du fournisseur: </relation>
-            <relation table="contact">Contact du fournisseur: </relation>
+            <relation table="address">Ajouter une addresse ? </relation>
+            <relation table="contact">Ajouter un contact ? </relation>
         </relations>
-
+    </insert>
+    <insert name="promotion">
+        <script>
+            INSERT INTO public.promotion (nom, value, date_start, date_end, enabled)
+            VALUES(%s, %S, %s, %s, %s) RETURNING id;
+        </script>
+        <field name="nom" type="varchar">Quel nom donner à cette promotion ? </field>
+        <field name="value" type="varchar">Quel pourcentage donner à cette promotion ? (entre 0 et 100)</field>
+        <field name="date_start" type="date_time">Quand démmarre cette promotion ? </field>
+        <field name="date_end" type="date_time">Quand fini cette promotion ? </field>
+        <field name="enabled" type="bool">Voulez-vous activer la promotion ? </field>
     </insert>
     <insert name="code_accounting">
         <script>
@@ -94,11 +104,10 @@
                       exist="maybe"
                       show="nom">Quel fournisseur ? </relation>
         </relations>
-
     </insert>
     <insert name="option">
         <script>
-            INSERT INTO public.option (nutriment_id, description, quantity, unit)
+            INSERT INTO public.option (description, quantity, unit, nutriment_id)
             VALUES (%s, %s, %s, %s) RETURNING id;
         </script>
         <field name="description" type="varchar">Description de l'option: </field>
@@ -106,7 +115,8 @@
         <field name="unit" type="enum" t_name="unity">Unité: </field>
         <relations type="has_one">
             <relation table="nutriment"
-                      exist="yes" show="nom">Aliment concerné par l'option: </relation>
+                      exist="yes"
+                      show="nom">Aliment concerné par l'option: </relation>
         </relations>
     </insert>
     <insert name="pizza">
@@ -118,13 +128,19 @@
         <field name="description" type="varchar">Description : </field>
         <field name="photo_url" type="varchar" test="image">Fichier de la photo : </field>
         <field name="thumb" type="bytea" control="thumb"/>
-        <relations type="has_many" through="recipe" has_fields="yes">
-            <relation table="nutriment">Voulez-vous ajouter un ingrédient à la recette ?</relation>
+        <relations type="has_many" through="recipe">
+            <relation table="nutriment"
+                      exist="maybe"
+                      show="nom">Ajouter un ingrédient à la recette ?  </relation>
         </relations>
-        <relations type="has_many" through="price"
-                   has_fileds="yes">
-
-        </relations>
+    </insert>
+    <insert name="recipe">
+        <script>
+            INSERT INTO public.recipe (quantity, unit, pizza_id, nutriment_id)
+            VALUES (%s, %s, %s, %s);
+        </script>
+        <field name="quantity" type="int" constraint="1-100">Quantité voulu ? </field>
+        <field name="unit" type="enum" t_name="unity">Quelle unité ? </field>
     </insert>
     <insert name="restaurant">
         <script>
@@ -136,17 +152,22 @@
             <relation table="address">Voulez-vous ajouter une addresse ? </relation>
             <relation table="contact">Voulez-vous ajouter un contact ? </relation>
         </relations>
-        <relations type="has_many" through="menu_pizza" exist="maybe">
-            <relation table="pizza">Voulez-vous ajouter une pizza au menu ?</relation>
+        <relations type="has_many" through="menu_pizza">
+            <relation table="pizza"
+                      exist="maybe"
+                      show="nom">Voulez-vous ajouter une pizza au menu ?
+            </relation>
+            <relation table="drink"
+                      exist="maybe"
+                      show="nom">Voulez-vous ajouter une boisson au menu ?
+            </relation>
+            <relation table="option"
+                      exist="maybe"
+                      show="nom">Voulez-vous ajouter une option au menu ?
+            </relation>
         </relations>
     </insert>
-    <insert name="menu_pizza">
-        <script>
-            INSERT INTO public.menu_pizza (pizza_id, restaurant_id)
-            VALUES (%s, %s);
-        </script>
-    </insert>
-    <insert name="price">
+    <insert name="menus_price">
         <script>
             INSERT INTO public.price (restaurant_id, pizza_id, drink_id, option_id, size_pizza, price)
             VALUES (%s, %s, %s, %s, %s, %s) RETURNING id;
@@ -161,32 +182,6 @@
             <relation table="drink" exist="yes">Boisson concerné: </relation>
             <relation table="option" exist="yes">Option concerné: </relation>
         </relations>
-    </insert>
-    <insert name="promotion">
-        <script>
-            INSERT INTO public.promotion (nom, value, date_start, date_end, enabled)
-            VALUES(%s, %S, %s, %s, %s) RETURNING id;
-        </script>
-        <field name="nom" type="varchar">Quel nom donner à cette promotion ? </field>
-        <field name="value" type="varchar">Quel pourcentage donner à cette promotion ? (entre 0 et 100)</field>
-        <field name="date_start" type="date_time">Quand démmarre cette promotion ? </field>
-        <field name="date_end" type="date_time">Quand fini cette promotion ? </field>
-        <field name="enabled" type="bool">Voulez-vous activer la promotion ?</field>
-    </insert>
-    <insert name="recipe">
-        <script>
-            INSERT INTO public.recipe (pizza_id, nutriment_id, quantity, unit)
-            VALUES (%s, %s, %s, %s) RETURNING id;
-        </script>
-        <field name="quantity" type="int" constraint="1-100">Quantité voulu ? </field>
-        <field name="unit" type="enum" t_name="unity">Quelle unité ? </field>
-
-    </insert>
-    <insert name="menu_drink">
-        <script>
-            INSERT INTO public.menu_drink (drink_id, restaurant_id)
-            VALUES (%s, %s);
-        </script>
     </insert>
     <insert name="stock">
         <script>
@@ -221,33 +216,26 @@
     </insert>
     <insert name="order_detail">
         <script>
-            INSERT INTO pubic.order_detail (order_id, pizza_id, drink_id, promotion_id, size_pizza, status)
-            VALUES(%s, %s, %s, %s, %s, %s) RETURNING id;
+            INSERT INTO pubic.order_detail
+            (size_pizza, status, order_id, pizza_id, drink_id, promotion_id, option_id)
+            VALUES(%s, %s, %s, %s, %s, %s);
         </script>
         <field name="size_pizza" type="enum" t_name="pizza_size"
                constraint="pizza_id_only">Quelle taille de pizza ? </field>
+        <field name="quantity" type="int">Combien en voulez-vous ? </field>
         <field name="status" type="enum" t_name="pizza_status"
                control="system"/>
-        <relations type="has_one" constraint="pizza or drink">
+        <relations type="has_one">
             <relation table="order" exist="yes" control="last_order"/>
+        </relations>
+        <relations type="has_many"
+                   constraint="((pizza and many options) or drink) and promotion)">
             <relation table="pizza" exist="yes">Choix de la pizza: </relation>
             <relation table="drink" exist="yes">Choix de la boisson</relation>
+            <relation table="option" exist="yes">Choix de l'option: </relation>
             <relation table="promotion" exist="yes"
                       control="system"/>>
         </relations>
-
-    </insert>
-    <insert name="order_detail_option">
-        <script>
-            INSERT INTO public.order_detail_option (order_detail_id, option_id, quantity)
-            VALUES (%s, %s, %s) RETURNING id;
-        </script>
-        <field name="quantity" type="int">Combien en voulez-vous ? </field>
-        <relations type="has_one">
-            <relation table="order_detail_id" control="last"/>
-            <relation table="option" exist="yes">Choix de l'option: </relation>
-        </relations>
-
     </insert>
     <insert name="promotion">
         <script>

@@ -39,13 +39,13 @@ class Database():
             else:
                 cursor.execute(request)
         except psycopg2.Error as e:
-            print(e.pgerror)
+            print("from request call:\n", e.pgerror)
             self.connector.rollback()
         else:
             try:
                 self.connector.commit()
             except psycopg2.Error as e:
-                print(e.pgerror)
+                print("from commit:\n", e.pgerror)
                 self.connector.rollback()
             else:
                 if ask:
