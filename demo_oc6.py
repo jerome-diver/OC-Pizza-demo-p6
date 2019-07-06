@@ -61,7 +61,7 @@ def create(target, entry_list, from_csv):
         """)
     else:
         if from_csv:
-            new_records = Record(target, file=from_csv, type_file="csv")
+            new_records = Record(target, file=from_csv, file_type="csv")
         else:
             new_records = Record(target)
         click.echo(new_records.show_messages())

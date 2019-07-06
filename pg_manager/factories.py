@@ -9,15 +9,13 @@ class Record:
 
     def __init__(self, target, file=None, file_type=None):
         record = None
-        self._file = file
-        self._ftype = file_type
         self._observer = Observer()
         if target == "user":
             record = NewUser(self._observer)
         if target == "provider" or \
                 target == "promotion" or \
                 target == "code_accounting":
-            record = NewHasOne(target, self._observer)
+            record = NewHasOne(target, self._observer, file, file_type)
         record.process()
 
     def show_messages(self):
@@ -36,7 +34,7 @@ class NewUser(Creator):
     def process(self):
         """New user Record process"""
 
-        user_id = self._create_simple(self.entry)
+        user_id = self._create_simple(self._entry)
         self._observer.add_record("user", user_id)
         for relation in self.entry.has_many:
             through = relation["through"]
@@ -82,26 +80,45 @@ class NewHasOne(Creator):
     """Process for record use case:
     provider | promotion | code_accounting record"""
 
-    def __init__(self, target, observer):
+    def __init__(self, target, observer, file=None, file_type=None):
         super().__init__(target)
         self._observer = observer
+        self._file = file
+        self._file_type = file_type
 
     def process(self):
         """Process instructions to record a new user"""
 
-        values = self._get_fields_values_for(self.entry.fields)
-        for relation in self.entry.has_one:
-            add_relation = self.YES.match(input(relation["question"]))
-            if add_relation:
-                id_record = self._create_simple(relation["entry"])
-                values.append(id_record)
-                self._observer.add_relation_has_one(
-                    relation["table"], id_record)
-            else:
-                values.append(None)
-        request = self._sql.table(str(self.entry), "script")
-        id = self._db.request(request, values, ask=True)
-        self._observer.add_record(str(self.entry),
-                                  int(id[0][0]),
-                                  values)
+        if self._file_type:
+            self._record_from_file()
+        else:
+            values = self._get_fields_values_for(self.entry.fields)
+            for relation in self.entry.has_one:
+                add_relation = self.YES.match(input(relation["question"]))
+                if add_relation:
+                    id_record = self._create_simple(relation["entry"])
+                    values.append(id_record)
+                    self._observer.add_relation_has_one(
+                        relation["table"], id_record)
+                else:
+                    values.append(None)
+            request = self._sql.table(str(self._entry), "script")
+            id = self._db.request(request, values, ask=True)
+            self._observer.add_record(str(self.entry),
+                                      int(id[0][0]),
+                                      values)
 
+    def _record_from_file(self):
+        """Record data from file content list of entries"""
+
+        if self._file_type == "csv":
+            char_separator = input("Quelle est le caractère de "
+                                   "séparation du fichier CSV svp ? ")
+            PCG = []
+            with open(self._file, 'r') as pcg:
+                for line in pcg:
+                    PCG.append(tuple(line.strip().split(char_separator)))
+            request = self._sql.table(str(self._entry), "script")
+            for pcg_values in PCG:
+                id = self._db.request(request, pcg_values, ask=True)
+                self._observer.add_record(str(self._entry), id)
