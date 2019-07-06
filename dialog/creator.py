@@ -89,6 +89,8 @@ class Creator:
                 value = self._field.bool_(field)
             if field["type"] == "date":
                 value = self._field.date_(field)
+            if field["type"] == "date_time":
+                value = self._field.date_time_(field)
             values.append(value)
 
         return values

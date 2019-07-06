@@ -103,7 +103,7 @@ class NewHasOne(Creator):
                 else:
                     values.append(None)
             request = self._sql.table(str(self._entry), "script")
-            id = self._db.request(request, values, ask=True)
+            id = self._db.request(request, tuple(values), ask=True)
             self._observer.add_record(str(self.entry),
                                       int(id[0][0]),
                                       values)

@@ -62,12 +62,12 @@
     <insert name="promotion">
         <script>
             INSERT INTO public.promotion (nom, value, date_start, date_end, enabled)
-            VALUES(%s, %S, %s, %s, %s) RETURNING id;
+            VALUES(%s, %s, %s, %s, %s) RETURNING id;
         </script>
         <field name="nom" type="varchar">Quel nom donner à cette promotion ? </field>
         <field name="value" type="varchar">Quel pourcentage donner à cette promotion ? (entre 0 et 100)</field>
-        <field name="date_start" type="date_time">Quand démmarre cette promotion ? </field>
-        <field name="date_end" type="date_time">Quand fini cette promotion ? </field>
+        <field name="date_start" type="date">Quand démmarre cette promotion ? </field>
+        <field name="date_end" type="date">Quand fini cette promotion ? </field>
         <field name="enabled" type="bool">Voulez-vous activer la promotion ? </field>
     </insert>
     <insert name="code_accounting">

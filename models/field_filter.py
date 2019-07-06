@@ -1,7 +1,7 @@
 """Filter for Field Postgresql Types values
 (parser with actions on view)"""
 
-from datetime import date
+from datetime import date, datetime
 import re
 from pathlib import Path
 from PIL import Image
@@ -13,8 +13,13 @@ from pg_manager import SQLShowRequest
 class Field:
     """Act from field type (defined inside the XML file)"""
 
-    IS_YES_OR_NO = re.compile(r'Oui|Non|o|n', re.IGNORECASE)
+    IS_YES_OR_NO = re.compile(r'oui|non|o|n', re.IGNORECASE)
     IS_YES = re.compile(r'o|oui', re.IGNORECASE)
+    IS_DATE = re.compile(r'^(0[1-9]|[1-2]\d|3[0-1])/(0[1-9]|1[0-2])/'
+                         r'(20[1-3][0-9])$')
+    IS_DATE_TIME = re.compile(r'^([0-1]\d|2[0-3]):([0-5][0-9]) (0[1-9]|'
+                              r'[1-2]\d|3[0-1])/(0[1-9]|1[0-2])/'
+                              r'(20[1-3][0-9])$')
 
     def __init__(self):
         self._convert = Convert()
@@ -95,11 +100,29 @@ class Field:
         """React for bool field type"""
 
         value = None
-        while not value:
-            value = self.IS_YES_OR_NO.match(input(field["question"]))
-        return bool(self.IS_YES(value))
+        correct = None
+        while not correct:
+            value = input(field["question"])
+            correct = self.IS_YES_OR_NO.match(value)
+        return bool(self.IS_YES.match(value))
 
     def date_(self, field: dict) -> date:
         """React for date field type"""
 
-        pass
+        correct = False
+        while not correct:
+            question = field["question"] + " [DD/MM/YYY] "
+            answer = input(question)
+            correct = self.IS_DATE.match(answer)
+        return datetime.strptime(answer, "%d/%m/%Y").date()
+
+    def date_time_(self, field) -> datetime:
+        """React for date_time field's type"""
+
+        correct = False
+        while not correct:
+            question = field["question"] + "[HH:MM DD/MM/YYY] "
+            answer = input(question)
+            correct = self.IS_DATE_TIME.match(answer)
+        return datetime.strptime(answer, "%H:%M %d/%m/%Y")
+
