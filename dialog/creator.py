@@ -5,7 +5,7 @@ from pathlib import Path
 from PIL import Image
 
 from pg_manager import SQLInsertRequest, SQLShowRequest, Database
-from models import TableEntry
+from models import TableEntry, Field
 from tools import Convert
 
 
@@ -23,6 +23,7 @@ class Creator:
         self._messages = ""
         self._relational_values = []
         self._entry = TableEntry(target)
+        self._field = Field()
 
     @property
     def entry(self):
@@ -124,60 +125,26 @@ class Creator:
 
         values = list()
         for field in fields:
+            value = None
             if field["type"] == "varchar":
-                value = None
                 if field["test"] == "file":
-                    is_file = False
-                    while not is_file:
-                        value = input(field["question"])
-                        is_file = Path(value).is_file()
-                        if not is_file:
-                            print("Ce fichier n'existe pas... entrez un "
-                                  "fichier qui existe svp")
+                    value = self._field.file_(field)
                 elif field["test"] == "image":
-                    is_image =  False
-                    while not is_image:
-                        value = input(field["question"])
-                        try:
-                            img = Image.open(value)
-                            img.close()
-                        except IOError:
-                            print("ce fichier n'est pas une image que "
-                                  "je peux gérer "
-                                  "(ou n'est pas une image)")
-                            is_image = False
-                        else:
-                            is_image = True
+                    value = self._field.image_(field)
                 else:
-                    value = input(field["question"])
-                values.append(value)
+                    value = self._field.varchar_(field)
             if field["type"] == "int":
-                value = input(field["question"])
-                values.append(int(value))
+                value = self._field.int_(field)
             if field["type"] == "enum":
-                correct_answer = None
-                answer = None
-                request = SQLShowRequest().type()
-                enums = self._db.request(request,
-                                         (field["type_name"],),
-                                         ask=True)
-                valid = re.compile(r"%s" % enums[0][2])
-                while not correct_answer:
-                    question = "{}({}) : ".format(field["question"],
-                                                  enums[0][2])
-                    answer = input(question)
-                    correct_answer = valid.match(answer)
-                values.append(answer)
+                value = self._field.enum_(field)
             if field["type"] == "bytea":
-                value = input(field["question"]) \
-                    if field["question"] else None
-                if field["control"]:
-                    if field["control"] == "password":
-                        values.append(self._convert.password(value))
-                    elif field["control"] == "thumb":
-                        values.append(self._convert.thumb(values[-1])[1])
-                    elif field["control"] == "salt":
-                        values.append(self._convert.salt)
+                value = self._field.bytea_(field, values)
+            if field["type"] == "bool":
+                value = self._field.bool_(field)
+            if field["type"] == "date":
+                value = self._field.date_(field)
+            values.append(value)
+
         return values
 
     @staticmethod
