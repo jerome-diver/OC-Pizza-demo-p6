@@ -88,7 +88,7 @@
         <relations type="has_one">
             <relation table="provider"
                       exist="maybe"
-                      show="nom">Quel fournisseur ? </relation>
+                      show="nom">Ajouter un fournisseur ? </relation>
         </relations>
     </insert>
     <insert name="drink">
@@ -102,7 +102,7 @@
         <relations type="has_one">
             <relation table="provider"
                       exist="maybe"
-                      show="nom">Quel fournisseur ? </relation>
+                      show="nom">Ajoutez un fournisseur ? </relation>
         </relations>
     </insert>
     <insert name="option">
@@ -116,7 +116,7 @@
         <relations type="has_one">
             <relation table="nutriment"
                       exist="yes"
-                      show="nom">Aliment concerné par l'option: </relation>
+                      show="nom">Concerne quel aliment ? </relation>
         </relations>
     </insert>
     <insert name="pizza">

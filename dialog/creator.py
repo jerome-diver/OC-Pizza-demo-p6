@@ -1,10 +1,8 @@
 """Create records"""
 
 import re
-from pathlib import Path
-from PIL import Image
 
-from pg_manager import SQLInsertRequest, SQLShowRequest, Database
+from pg_manager import SQLInsertRequest, SQLShowRequest, Database #, NewHasOne
 from models import TableEntry, Field
 from tools import Convert
 
@@ -15,12 +13,13 @@ class Creator:
     YES = re.compile(r'o|y|oui|yes', re.IGNORECASE)
     ADD_A = re.compile(r'^(.*ajouter un[e]? )(.*)$', re.IGNORECASE)
 
-    def __init__(self, target):
+    def __init__(self, target=None):
 
         self._sql = SQLInsertRequest()
         self._db = Database()
         self._convert = Convert()
-        self._entry = TableEntry(target)
+        if target:
+            self._entry = TableEntry(target)
         self._field = Field()
 
     @property
@@ -29,15 +28,39 @@ class Creator:
 
         return self._entry
 
-    def _create_simple(self, entry):
+    def _create_simple(self, relation):
         """ask for fields entry and record, then return id"""
 
         id = []
+        entry = relation["entry"]
         while not id:
             values = self._get_fields_values_for(entry.fields)
             request = self._sql.table(str(entry), "script")
+            print("===>", request, values)
             id = self._db.request(request, tuple(values), ask=True)
         return int(id[0][0])
+
+    def _create_maybe(self, relation):
+        """ask from a list of records to choose one (exist=yes)
+        or (exist=maybe) possibly create a new one
+        or STOP link recording"""
+
+        id = 0
+        while id == 0:
+            if relation["exist"]:
+                choices = self._show_existing_records(
+                    relation["table"], relation["show"], relation["exist"])
+                answer = input("Faites un choix: ")
+                if relation["exist"] == "maybe" and answer==choices[-1]:
+                    id = self._create_simple(relation)
+                    #new_record = Record(relation["table"],
+                    #                    creator=self._create_simple)
+                elif 1 < int(answer) < len(choices):
+                    id = choices[int(answer)]
+                elif int(answer) >= len(choices):
+                    print("re-essayez: vous avez fait un choix qui n'existe "
+                          "pas.")
+        return id
 
     def _record_through(self, through, values):
         """Record relational table"""
@@ -46,25 +69,6 @@ class Creator:
         print(request, values)
         success = self._db.request(request, tuple(values))
         return success
-
-    def _show_existing_records(self, table, field, exist):
-        """Print enumerated list of fields 'field' existing 'table' records
-            and return a list of id and 'n': [id,.....,'n']"""
-
-        choices = ["STOP"]
-        print("  0) -- STOP --")
-        sql = SQLShowRequest()
-        sub_request = sql.table(table)
-        request = re.sub(r'\*', f"id, {field}", sub_request)
-        records = self._db.request(request, ask=True)
-        for n, record in enumerate(records):
-            choices.append(int(record[0]))
-            string = "%3s) %s" % (n+1, record[1])
-            print(string)
-        if exist == "maybe":
-            choices.append("n")
-            print("  n) -- Créer --")
-        return choices
 
     def _get_fields_values_for(self, fields) -> list:
         """Return values list for fields required"""
@@ -103,19 +107,24 @@ class Creator:
         question = match.group(1) + "autre " + match.group(2)
         return question
 
-    def _get_maybe_existing_record(self, relation) -> (str, int):
-        """Return message and id for new or existing table record"""
+    def _show_existing_records(self, table, field, exist):
+        """Print enumerated list of fields 'field' existing 'table' records
+            and return a list of id and 'n': [id,.....,'n']"""
 
-        id = 0
-        if relation["exist"]:
-            choices = self._show_existing_records(
-                relation["table"], relation["show"], relation["exist"])
-            answer = input("Faites un choix: ")
-            if relation["exist"] == "maybe" and answer==choices[-1]:
-                id = self._create_simple(relation["entry"])
-            elif answer != "0":
-                id = choices[int(answer)]
-        return id
+        choices = ["STOP"]
+        print("  0) -- STOP --")
+        sql = SQLShowRequest()
+        sub_request = sql.table(table)
+        request = re.sub(r'\*', f"id, {field}", sub_request)
+        records = self._db.request(request, ask=True)
+        for n, record in enumerate(records):
+            choices.append(int(record[0]))
+            string = "%3s) %s" % (n+1, record[1])
+            print(string)
+        if exist == "maybe":
+            choices.append("n")
+            print("  n) -- Créer --")
+        return choices
 
     def _get_required_(self, through, what=None) -> list:
         """Return required tables from relational table name 'through'"""

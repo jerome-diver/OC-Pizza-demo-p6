@@ -1,21 +1,27 @@
 """Factories file for Record process depend to use case"""
 
-from dialog import Creator
-from dialog import Observer
+from dialog import Creator, Observer
 
 
 class Record:
     """Record Abstract Factory"""
 
-    def __init__(self, target, file=None, file_type=None):
+    def __init__(self, target, **kwargs):
         record = None
+        creator = Creator()
         self._observer = Observer()
         if target == "user":
             record = NewUser(self._observer)
         if target == "provider" or \
                 target == "promotion" or \
                 target == "code_accounting":
-            record = NewHasOne(target, self._observer, file, file_type)
+            record = NewHasOne(target, self._observer,
+                               creator=creator._create_simple, **kwargs)
+        if target == "nutriment" or \
+                target == "drink" or \
+                target == "option":
+            record = NewHasOne(target, self._observer,
+                               creator=creator._create_maybe, **kwargs)
         record.process()
 
     def show_messages(self):
@@ -53,7 +59,7 @@ class NewUser(Creator):
                 else self._get_an_other(relation["question"])
             add_relation = self.YES.match(input(question))
             if add_relation:
-                id_record = self._create_simple(relation["entry"])
+                id_record = self._create_simple(relation)
                 self._observer.add_relation_has_many(
                     relation["table"], id_record)
                 if relation["table"] == "address":
@@ -77,26 +83,37 @@ class NewUser(Creator):
 
 
 class NewHasOne(Creator):
-    """Process for record use case:
-    provider | promotion | code_accounting record"""
+    """Process for new record (not maybe creator):
+    provider | promotion | code_accounting record
+    (maybe creator):
+    nutriment | drink | option"""
 
-    def __init__(self, target, observer, file=None, file_type=None):
+    def __init__(self, target, observer, **kwargs):
         super().__init__(target)
         self._observer = observer
-        self._file = file
-        self._file_type = file_type
+        self._creator = kwargs["creator"]
+        self._file = kwargs["file"] if "file" in kwargs else None
+        self._file_type = kwargs["file_type"] if "file_type" in kwargs \
+            else None
+        self._create_ = kwargs["creator"]
 
     def process(self):
-        """Process instructions to record a new user"""
+        """Process to record any new
+        provider|promotion|code_accounting (exist = None)
+        nutriment|drink|option (exist = maybe|yes)"""
 
         if self._file_type:
             self._record_from_file()
         else:
             values = self._get_fields_values_for(self.entry.fields)
             for relation in self.entry.has_one:
-                add_relation = self.YES.match(input(relation["question"]))
+                add_relation = True
+                if relation["exist"] is None:
+                    add_relation = self.YES.match(input(relation["question"]))
+                else:
+                    print(relation["question"])
                 if add_relation:
-                    id_record = self._create_simple(relation["entry"])
+                    id_record = self._creator(relation)
                     values.append(id_record)
                     self._observer.add_relation_has_one(
                         relation["table"], id_record)
@@ -122,3 +139,5 @@ class NewHasOne(Creator):
             for pcg_values in PCG:
                 id = self._db.request(request, pcg_values, ask=True)
                 self._observer.add_record(str(self._entry), id)
+
+

@@ -7,7 +7,7 @@ from pathlib import Path
 from PIL import Image
 
 from tools import Convert
-from pg_manager import SQLShowRequest
+from pg_manager import SQLShowRequest, Database
 
 
 class Field:
@@ -23,6 +23,7 @@ class Field:
 
     def __init__(self):
         self._convert = Convert()
+        self._db = Database()
 
     def int_(self, field):
         """React for int field type"""
@@ -110,6 +111,7 @@ class Field:
         """React for date field type"""
 
         correct = False
+        answer = None
         while not correct:
             question = field["question"] + " [DD/MM/YYY] "
             answer = input(question)
@@ -120,6 +122,7 @@ class Field:
         """React for date_time field's type"""
 
         correct = False
+        answer = None
         while not correct:
             question = field["question"] + "[HH:MM DD/MM/YYY] "
             answer = input(question)
