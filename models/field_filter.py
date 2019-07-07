@@ -7,7 +7,8 @@ from pathlib import Path
 from PIL import Image
 
 from tools import Convert
-from pg_manager import SQLShowRequest, Database
+from models import SQLShowRequest
+from pg_manager import  Database
 
 
 class Field:

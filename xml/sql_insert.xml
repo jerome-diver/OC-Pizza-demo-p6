@@ -115,7 +115,7 @@
         <field name="unit" type="enum" t_name="unity">Unité: </field>
         <relations type="has_one">
             <relation table="nutriment"
-                      exist="yes"
+                      exist="maybe"
                       show="nom">Concerne quel aliment ? </relation>
         </relations>
     </insert>

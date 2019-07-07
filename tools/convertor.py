@@ -19,11 +19,12 @@ class Convert():
         inside Postgresql bytea field's type"""
 
         img_file = Path(image_file)
-        thumb_file = img_file.parent + img_file.stem + \
-                     "_thumb" + img_file.suffix
+        thumb_file = str(img_file.parent) + "/" + img_file.stem + "_thumb" \
+                      + img_file.suffix
         format = "PNG" if img_file.suffix == ".png" else "JPEG"
         image = Image.open(image_file)
         image.thumbnail((64,64))
+        print(thumb_file)
         image.save(thumb_file, quality=50, optimized=True)
         byte_file = BytesIO()
         image.save(byte_file, format=format)

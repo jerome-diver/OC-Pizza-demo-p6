@@ -2,7 +2,8 @@
 
 from subprocess import check_output, call
 
-from . import SQLCreateRequest, Database
+from . import Database
+from models import SQLCreateRequest
 
 
 class OCPizzaCreator():

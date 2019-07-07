@@ -1,6 +1,7 @@
 """Inspect content of database (not READ records)"""
 
-from pg_manager import SQLShowRequest, Database
+from pg_manager import Database
+from models import SQLShowRequest
 from cli_helpers.tabular_output import TabularOutputFormatter
 
 

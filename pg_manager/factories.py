@@ -1,33 +1,172 @@
 """Factories file for Record process depend to use case"""
 
-from dialog import Creator, Observer
+import re
+
+from models import SQLInsertRequest, SQLShowRequest, TableEntry, Field
+from pg_manager import Database
+from tools import Convert
+from dialog import Observer
+
+
+class Creator:
+    """Create records"""
+
+    YES = re.compile(r'o|y|oui|yes', re.IGNORECASE)
+    ADD_A = re.compile(r'^(.*ajouter un[e]? )(.*)$', re.IGNORECASE)
+
+    def __init__(self, target=None):
+
+        self._sql = SQLInsertRequest()
+        self._db = Database()
+        self._convert = Convert()
+        if target:
+            self._entry = TableEntry(target)
+        self._field = Field()
+
+    @property
+    def entry(self):
+        """Property entry"""
+
+        return self._entry
+
+    def _create_simple(self, arg):
+        """ask for fields entry and record, then return id"""
+
+        id = []
+        entry = arg if isinstance(arg, TableEntry) else arg["entry"]
+        while not id:
+            values = self._get_fields_values_for(entry.fields)
+            request = entry.request
+            print("===>", request, values)
+            id = self._db.request(request, tuple(values), ask=True)
+        return int(id[0][0])
+
+    def _create_maybe(self, relation):
+        """ask from a list of records to choose one (exist=yes)
+        or (exist=maybe) possibly create a new one
+        or STOP link recording"""
+
+        id = 0
+        while id == 0:
+            if relation["exist"]:
+                choices = self._show_existing_records(
+                    relation["table"], relation["show"], relation["exist"])
+                answer = input("Faites un choix: ")
+                if relation["exist"] == "maybe" and answer==choices[-1]:
+                    Record(relation["table"])
+                elif 1 < int(answer) < len(choices):
+                    id = choices[int(answer)]
+                elif int(answer) >= len(choices):
+                    print("re-essayez: vous avez fait un choix qui n'existe "
+                          "pas.")
+        return id
+
+    def _record_through(self, through, values):
+        """Record relational table"""
+
+        request = self._sql.table(through, "script")
+        print(request, values)
+        success = self._db.request(request, tuple(values))
+        return success
+
+    def _get_fields_values_for(self, fields) -> list:
+        """Return values list for fields required"""
+
+        values = list()
+        for field in fields:
+            value = None
+            if field["type"] == "varchar":
+                if field["test"] == "file":
+                    value = self._field.file_(field)
+                elif field["test"] == "image":
+                    value = self._field.image_(field)
+                else:
+                    value = self._field.varchar_(field)
+            if field["type"] == "int":
+                value = self._field.int_(field)
+            if field["type"] == "enum":
+                value = self._field.enum_(field)
+            if field["type"] == "bytea":
+                value = self._field.bytea_(field, values)
+            if field["type"] == "bool":
+                value = self._field.bool_(field)
+            if field["type"] == "date":
+                value = self._field.date_(field)
+            if field["type"] == "date_time":
+                value = self._field.date_time_(field)
+            values.append(value)
+
+        return values
+
+    @staticmethod
+    def _get_an_other(string) -> str:
+        """Add 'autre ' inside string at precise point"""
+
+        match = Creator.ADD_A.match(string)
+        question = match.group(1) + "autre " + match.group(2)
+        return question
+
+    def _show_existing_records(self, table, field, exist):
+        """Print enumerated list of fields 'field' existing 'table' records
+            and return a list of id and 'n': [id,.....,'n']"""
+
+        choices = ["STOP"]
+        print("  0) -- STOP --")
+        sql = SQLShowRequest()
+        sub_request = sql.table(table)
+        request = re.sub(r'\*', f"id, {field}", sub_request)
+        records = self._db.request(request, ask=True)
+        for n, record in enumerate(records):
+            choices.append(int(record[0]))
+            string = "%3s) %s" % (n+1, record[1])
+            print(string)
+        if exist == "maybe":
+            choices.append("n")
+            print("  n) -- Créer --")
+        return choices
+
+    def _get_required_(self, through, what=None) -> list:
+        """Return required tables from relational table name 'through'"""
+
+        script = self._sql.table(through)["script"]
+        fk = lambda x: re.match(r'.*_id', x, re.IGNORECASE)
+        sub_id = lambda x: re.sub('_id', '', x)
+        fields = re.match(r'.*\((.*)\) VALUES.*', script).group(1).split(", ")
+        if what == "fk":
+            return list(filter(fk, fields))
+        if what == "tables":
+            return list(map(sub_id, list(filter(fk, fields))))
+        return fields
 
 
 class Record:
     """Record Abstract Factory"""
 
+    OBSERVER = Observer()
+    CREATOR = Creator()
+
     def __init__(self, target, **kwargs):
         record = None
-        creator = Creator()
-        self._observer = Observer()
         if target == "user":
-            record = NewUser(self._observer)
+            record = NewUser(self.OBSERVER)
         if target == "provider" or \
                 target == "promotion" or \
                 target == "code_accounting":
-            record = NewHasOne(target, self._observer,
-                               creator=creator._create_simple, **kwargs)
+            record = NewHasOne(target, self.OBSERVER,
+                               creator=self.CREATOR._create_simple,
+                               **kwargs)
         if target == "nutriment" or \
                 target == "drink" or \
                 target == "option":
-            record = NewHasOne(target, self._observer,
-                               creator=creator._create_maybe, **kwargs)
+            record = NewHasOne(target, self.OBSERVER,
+                               creator=self.CREATOR._create_maybe,
+                               **kwargs)
         record.process()
 
     def show_messages(self):
         """Show observer_messages"""
 
-        return self._observer.messages
+        return self.OBSERVER.messages
 
 
 class NewUser(Creator):
@@ -41,7 +180,7 @@ class NewUser(Creator):
         """New user Record process"""
 
         user_id = self._create_simple(self._entry)
-        self._observer.add_record("user", user_id)
+        self._observer.add_record("user", user_id, )
         for relation in self.entry.has_many:
             through = relation["through"]
             values = [user_id]

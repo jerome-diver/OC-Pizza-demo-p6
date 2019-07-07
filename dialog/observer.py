@@ -7,11 +7,15 @@ class Observer:
     def __init__(self):
         self._messages = ""
 
-    def add_record(self, table, id, values):
+    def add_record(self, table, id, values=None):
         """Tabel has been added"""
 
-        self._messages += f"Ajout d'un enregistrement sur {table}," \
-                         f" à l'id {id} pour les valeurs: {values}\n"
+        if values:
+            self._messages += f"Ajout d'un enregistrement sur {table}," \
+                              f" à l'id {id} pour les valeurs: {values}\n"
+        else:
+            self._messages += f"Ajout d'un enregistrement sur {table}," \
+                f" à l'id {id}\n"
 
     def add_relation_has_one(self, relation_table, id):
         """Add a new has_one relational table"""

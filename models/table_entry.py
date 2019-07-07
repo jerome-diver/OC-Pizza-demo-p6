@@ -1,6 +1,6 @@
-'''Tanle entry with his own related reocords'''
+"""Table entry with his own related records"""
 
-from pg_manager import SQLInsertRequest, SQLShowRequest, Database
+from models import SQLInsertRequest
 
 
 class TableEntry():

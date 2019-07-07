@@ -1,6 +1,7 @@
 """Read content of tables"""
 
-from pg_manager import Database, SQLShowRequest
+from pg_manager import Database
+from models import SQLShowRequest
 
 import re
 from cli_helpers.tabular_output import TabularOutputFormatter
