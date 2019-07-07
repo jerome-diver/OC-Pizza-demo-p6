@@ -131,7 +131,7 @@
         <relations type="has_many" through="recipe">
             <relation table="nutriment"
                       exist="maybe"
-                      show="nom">Ajouter un ingrédient à la recette ?  </relation>
+                      show="nom">Ajouter un ingrédient à la recette :  </relation>
         </relations>
     </insert>
     <insert name="recipe">

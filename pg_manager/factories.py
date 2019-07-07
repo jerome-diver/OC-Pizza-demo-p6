@@ -14,13 +14,15 @@ class Creator:
     YES = re.compile(r'o|y|oui|yes', re.IGNORECASE)
     ADD_A = re.compile(r'^(.*ajouter un[e]? )(.*)$', re.IGNORECASE)
 
-    def __init__(self, target=None):
+    def __init__(self, target=None, observer=None):
 
         self._sql = SQLInsertRequest()
         self._db = Database()
         self._convert = Convert()
         if target:
             self._entry = TableEntry(target)
+        if observer:
+            self._observer = observer
         self._field = Field()
 
     @property
@@ -37,7 +39,9 @@ class Creator:
         while not id:
             values = self._get_fields_values_for(entry.fields)
             request = entry.request
-            print("===>", request, values)
+            if self._observer:
+                self._observer.add_debug_message(
+                    f"request: {request}\n ==> values: {values}")
             id = self._db.request(request, tuple(values), ask=True)
         return int(id[0][0])
 
@@ -54,18 +58,22 @@ class Creator:
                 answer = input("Faites un choix: ")
                 if relation["exist"] == "maybe" and answer==choices[-1]:
                     Record(relation["table"])
-                elif 1 < int(answer) < len(choices):
+                elif 1 <= int(answer) < len(choices):
                     id = choices[int(answer)]
                 elif int(answer) >= len(choices):
                     print("re-essayez: vous avez fait un choix qui n'existe "
                           "pas.")
+                else:   # Choice is 0 ==> STOP
+                    id = None
         return id
 
     def _record_through(self, through, values):
         """Record relational table"""
 
         request = self._sql.table(through, "script")
-        print(request, values)
+        if self._observer:
+            self._observer.add_debug_message(
+                f"request: {request}\n ==> values: {values}")
         success = self._db.request(request, tuple(values))
         return success
 
@@ -116,13 +124,16 @@ class Creator:
         sub_request = sql.table(table)
         request = re.sub(r'\*', f"id, {field}", sub_request)
         records = self._db.request(request, ask=True)
+        if self._observer:
+            self._observer.add_debug_message(
+                f"request: {request}\n ==> answer: {records}")
         for n, record in enumerate(records):
             choices.append(int(record[0]))
             string = "%3s) %s" % (n+1, record[1])
             print(string)
         if exist == "maybe":
             choices.append("n")
-            print("  n) -- Créer --")
+            print("  n) -- Nouveau --")
         return choices
 
     def _get_required_(self, through, what=None) -> list:
@@ -143,7 +154,7 @@ class Record:
     """Record Abstract Factory"""
 
     OBSERVER = Observer()
-    CREATOR = Creator()
+    CREATOR = Creator(observer=OBSERVER)
 
     def __init__(self, target, **kwargs):
         record = None
@@ -152,15 +163,17 @@ class Record:
         if target == "provider" or \
                 target == "promotion" or \
                 target == "code_accounting":
+            create_simple = getattr(self.CREATOR, "_create_simple")
             record = NewHasOne(target, self.OBSERVER,
-                               creator=self.CREATOR._create_simple,
-                               **kwargs)
+                               creator=create_simple, **kwargs)
         if target == "nutriment" or \
                 target == "drink" or \
                 target == "option":
+            create_maybe = getattr(self.CREATOR, "_create_maybe")
             record = NewHasOne(target, self.OBSERVER,
-                               creator=self.CREATOR._create_maybe,
-                               **kwargs)
+                               creator=create_maybe, **kwargs)
+        if target == "pizza":
+            record = NewPizza(self.OBSERVER)
         record.process()
 
     def show_messages(self):
@@ -168,19 +181,24 @@ class Record:
 
         return self.OBSERVER.messages
 
+    def show_debug(self):
+        """Show debug observer messages"""
+
+        return self.OBSERVER.debug
+
 
 class NewUser(Creator):
     """Process for record use case New user"""
 
     def __init__(self, observer):
-        super().__init__("user")
+        super().__init__("user", observer=observer)
         self._observer = observer
 
     def process(self):
         """New user Record process"""
 
-        user_id = self._create_simple(self._entry)
-        self._observer.add_record("user", user_id, )
+        user_id = self._create_simple(self.entry)
+        self._observer.add_record("user", user_id)
         for relation in self.entry.has_many:
             through = relation["through"]
             values = [user_id]
@@ -228,13 +246,13 @@ class NewHasOne(Creator):
     nutriment | drink | option"""
 
     def __init__(self, target, observer, **kwargs):
-        super().__init__(target)
+        super().__init__(target, observer=observer)
         self._observer = observer
         self._creator = kwargs["creator"]
         self._file = kwargs["file"] if "file" in kwargs else None
-        self._file_type = kwargs["file_type"] if "file_type" in kwargs \
+        self._file_type = kwargs["file_type"] \
+            if "file_type" in kwargs \
             else None
-        self._create_ = kwargs["creator"]
 
     def process(self):
         """Process to record any new
@@ -258,7 +276,7 @@ class NewHasOne(Creator):
                         relation["table"], id_record)
                 else:
                     values.append(None)
-            request = self._sql.table(str(self._entry), "script")
+            request = self._entry.request
             id = self._db.request(request, tuple(values), ask=True)
             self._observer.add_record(str(self.entry),
                                       int(id[0][0]),
@@ -280,3 +298,36 @@ class NewHasOne(Creator):
                 self._observer.add_record(str(self._entry), id)
 
 
+class NewPizza(Creator):
+    """Record a new pizza"""
+
+    def __init__(self, observer):
+        super().__init__("pizza", observer=observer)
+        self._observer = observer
+
+    def process(self):
+        """Process new record for pizza"""
+
+        pizza_id = self._create_simple(self.entry)
+        self._observer.add_record("pizza", pizza_id)
+        for relation in self.entry.has_many:
+            nutriment_id = True
+            while nutriment_id is not None:
+                nutriment_id = self._create_maybe(relation)
+                through = relation["through"]
+                nutriment_entry = TableEntry(through)
+                if isinstance(nutriment_id, int):
+                    success = False
+                    while not success:
+                        values = self._get_fields_values_for(
+                            nutriment_entry.fields)
+                        recipe_values = values + [pizza_id, nutriment_id]
+                        request = nutriment_entry.request
+                        success = self._db.request(request,
+                                                   tuple(recipe_values))
+                        if success:
+                            self._observer.add_relation_link(through,
+                                                             recipe_values)
+                        else:
+                            self._observer.add_debug_message(
+                                f"Failed to record link relations {through}")

@@ -34,14 +34,16 @@ def initialize(target):
 
 
 @cli.command()
-@click.option("--target", help='Create a new record inside target existing '
-                             'table', type=str, required=False)
+@click.option("--target",
+              help='Create a new record inside target existing table',
+              type=str, required=False)
 @click.option("--entry_list",
               help="get possible entry list for insert datas in database",
               is_flag=True)
 @click.option("--from_csv", help="Insert from a csv formed file",
               type=str, required=False)
-def create(target, entry_list, from_csv):
+@click.option("--debug", help="Show debug messages", is_flag=True)
+def create(target, entry_list, from_csv, debug):
     '''Insert mode for CRUD model to record inside target table'''
 
     from pg_manager import Record
@@ -65,6 +67,8 @@ def create(target, entry_list, from_csv):
         else:
             new_records = Record(target)
         click.echo(new_records.show_messages())
+        if debug:
+            click.echo(new_records.show_debug())
 
 
 @cli.command()

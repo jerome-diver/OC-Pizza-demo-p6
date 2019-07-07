@@ -6,6 +6,7 @@ class Observer:
 
     def __init__(self):
         self._messages = ""
+        self._debug = ""
 
     def add_record(self, table, id, values=None):
         """Tabel has been added"""
@@ -33,10 +34,21 @@ class Observer:
         """Add a has_many relational link record"""
 
         self._messages += f"Ajout d'un lien relationnel {through} " \
-            f"avec les ids: {values}\n"
+            f"avec les valeurs: {values}\n"
+
+    def add_debug_message(self, text):
+        """Add a debug message to be read or not"""
+
+        self._debug += text + "\n"
 
     @property
     def messages(self):
         """Show what happened"""
 
         return self._messages
+
+    @property
+    def debug(self):
+        """Debug property"""
+
+        return self._debug
