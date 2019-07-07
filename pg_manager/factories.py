@@ -77,33 +77,35 @@ class Creator:
         success = self._db.request(request, tuple(values))
         return success
 
-    def _get_fields_values_for(self, fields) -> list:
+    def _get_fields_values_for(self, fields, exception=[]) -> list:
         """Return values list for fields required"""
 
         values = list()
         for field in fields:
-            value = None
-            if field["type"] == "varchar":
-                if field["test"] == "file":
-                    value = self._field.file_(field)
-                elif field["test"] == "image":
-                    value = self._field.image_(field)
-                else:
-                    value = self._field.varchar_(field)
-            if field["type"] == "int":
-                value = self._field.int_(field)
-            if field["type"] == "enum":
-                value = self._field.enum_(field)
-            if field["type"] == "bytea":
-                value = self._field.bytea_(field, values)
-            if field["type"] == "bool":
-                value = self._field.bool_(field)
-            if field["type"] == "date":
-                value = self._field.date_(field)
-            if field["type"] == "date_time":
-                value = self._field.date_time_(field)
-            values.append(value)
-
+            if field["name"] not in exception:
+                value = None
+                if field["type"] == "varchar":
+                    if field["test"] == "file":
+                        value = self._field.file_(field)
+                    elif field["test"] == "image":
+                        value = self._field.image_(field)
+                    else:
+                        value = self._field.varchar_(field)
+                if field["type"] == "int":
+                    value = self._field.int_(field)
+                if field["type"] == "enum":
+                    value = self._field.enum_(field)
+                if field["type"] == "bytea":
+                    value = self._field.bytea_(field, values)
+                if field["type"] == "bool":
+                    value = self._field.bool_(field)
+                if field["type"] == "date":
+                    value = self._field.date_(field)
+                if field["type"] == "date_time":
+                    value = self._field.date_time_(field)
+                if field["type"] == "numeric":
+                    value = self._field.numeric_(field)
+                values.append(value)
         return values
 
     @staticmethod
@@ -174,6 +176,8 @@ class Record:
                                creator=create_maybe, **kwargs)
         if target == "pizza":
             record = NewPizza(self.OBSERVER)
+        if target == "restaurant":
+            record = NewRestaurant(self.OBSERVER)
         record.process()
 
     def show_messages(self):
@@ -331,3 +335,62 @@ class NewPizza(Creator):
                         else:
                             self._observer.add_debug_message(
                                 f"Failed to record link relations {through}")
+
+
+class NewRestaurant(Creator):
+    """New record restaurant factory"""
+
+    CHOOSE = re.compile(r'.*\[(.*)\].*', re.IGNORECASE)
+
+    def __init__(self, observer):
+        super().__init__("restaurant", observer=observer)
+        self._observer = observer
+
+    def process(self):
+        """Process for record new restaurant"""
+
+        values = self._get_fields_values_for(self._entry.fields)
+        for relation in self.entry.has_one:
+            print(relation["question"])
+            values.append(self._create_simple(relation))
+            self._observer.add_relation_has_one(
+                relation["table"], values[-1])
+        request = self._entry.request
+        restaurant_id = self._db.request(
+            request, tuple(values), ask=True)[0][0]
+        self._observer.add_record("restaurant", restaurant_id)
+        # Find and record relation has_many through menu_price:
+        relation_id = 0
+        while relation_id is not None:
+            values = [restaurant_id]
+            relations = self._entry.has_many
+            choose_question = relations[0]["choose"]
+            through = relations[0]["through"]
+            cl = self.CHOOSE.match(choose_question).group(1).split(', ')
+            correct = False
+            answer =""
+            while not correct:
+                answer = input(choose_question)
+                correct = bool(answer in cl)
+            if answer == "boisson":
+                answer = "drink"
+            cl = ["drink" if x == "boisson" else x for x in cl]
+            menus_price_entry = TableEntry(through)
+            fields_values = [None] if answer != "pizza" else []
+            exception = ["size_pizza"] if answer != "pizza" else []
+            for relation in relations:
+                if relation["table"] == answer:
+                    relation_id = self._create_maybe(relation)
+                    if relation_id:
+                        self._observer.add_relation_has_many(
+                            relation["table"], relation_id)
+                        fields_values += self._get_fields_values_for(
+                                menus_price_entry.fields, exception)
+                        values += [relation_id
+                                   if x == answer
+                                   else None
+                                   for x in cl]
+                        values += fields_values
+                        success = self._record_through(through, values)
+                        if success:
+                            self._observer.add_relation_link(through, values)

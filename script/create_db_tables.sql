@@ -435,6 +435,7 @@ CREATE TABLE IF NOT EXISTS public.option
 (
     id bigserial,
     nutriment_id bigint NOT NULL,
+    nom character varying NOT NULL,
     description text COLLATE pg_catalog."default" NOT NULL,
     quantity integer NOT NULL,
     unit unity NOT NULL,

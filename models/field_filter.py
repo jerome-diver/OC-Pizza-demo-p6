@@ -32,6 +32,12 @@ class Field:
         value = input(field["question"])
         return int(value)
 
+    def numeric_(self, field):
+        """Numeric type field reaction"""
+
+        value = input(field["question"])
+        return float(value)
+
     def varchar_(self, field: dict) -> str:
         """React for varchar field type"""
 
