@@ -5,8 +5,8 @@ class Observer:
     """Observe"""
 
     def __init__(self):
-        self._messages = ""
-        self._debug = ""
+        self._messages = "\n========= Résumé des actions ===========\n"
+        self._debug = "\n======== DEBUG SQL =========\n"
 
     def add_record(self, table, id, values=None):
         """Tabel has been added"""

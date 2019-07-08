@@ -216,43 +216,52 @@
     </insert>
     <insert name="order">
         <script>
-            INSERT INTO public.order (restaurant_id, user_id, promotion_id, address_id, date, status, paid)
-            VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id;
+            INSERT INTO public.order (restaurant_id, user_id, address_id, promotion_id, paid)
+            VALUES (%s, %s, %s, %s, %s) RETURNING id;
         </script>
-        <field name="date" type="date" option="this_dat"/>
-        <field name="status" type="enum" t_name="order_status"/>
-        <field name="paid" type="boolean" option="system"/>
+        <field name="paid" type="bool">Le Client a-t-il payé à la commande ? </field>
         <relations type="has_one">
-            <relation table="restaurant" exist="yes" control="is_connected"/>
-            <relation table="user" exist="yes" control="is_connected"/>
-            <relation table="promotion" exist="yes" control="system"/>>
-            <relation table="address" exist="yes"
-                      control="user_addresses">A quelle addresse: </relation>
+            <relation table="restaurant"
+                      exist="yes"
+                      show="nom">Commande passée dans quel restaurant ? </relation>
+            <relation table="user"
+                      exist="yes"
+                      show="username, nom, prenom"> Quel utilisateur passe la commande ? </relation>
+            <relation table="address"
+                      exist="maybe"
+                      show="a.rue_1, a.cp, a.ville">A quelle addresse:</relation>
+            <relation table="promotion"
+                      exist="yes"
+                      show="nom"> Bénéficie d'une promotion sur toute la commande ? </relation>
+        </relations>
+        <relations type="has_many"
+                   through="order_detail"
+                   choose="Quel type d'article voulez-vous ajouter à la commande ? [pizza, boisson] ">
+            <relation table="pizza"
+                      exist="yes"
+                      show="p.nom">Choix de la pizza: </relation>
+            <relation table="drink"
+                      exist="yes"
+                      show="p.nom, p.packaging">Choix de la boisson :
+            </relation>
+            <relation table="option"
+                      exist="yes"
+                      show="nom">Choix de l'option: </relation>
+            <relation table="promotion"
+                      exist="yes"
+                      show="nom">Bénéficie d'une promotion sur cet article ? </relation>
         </relations>
 
     </insert>
     <insert name="order_detail">
         <script>
-            INSERT INTO pubic.order_detail
-            (size_pizza, status, order_id, pizza_id, drink_id, promotion_id, option_id)
-            VALUES(%s, %s, %s, %s, %s, %s);
+            INSERT INTO public.order_detail
+            (order_id, pizza_id, drink_id, option_id, promotion_id, size, quantity)
+            VALUES(%s, %s, %s, %s, %s, %s, %s);
         </script>
-        <field name="size_pizza" type="enum" t_name="pizza_size"
-               constraint="pizza_id_only">Quelle taille de pizza ? </field>
+        <field name="size" type="enum"
+               t_name="pizza_size">Quelle taille de pizza ? </field>
         <field name="quantity" type="int">Combien en voulez-vous ? </field>
-        <field name="status" type="enum" t_name="pizza_status"
-               control="system"/>
-        <relations type="has_one">
-            <relation table="order" exist="yes" control="last_order"/>
-        </relations>
-        <relations type="has_many"
-                   constraint="((pizza and many options) or drink) and promotion)">
-            <relation table="pizza" exist="yes">Choix de la pizza: </relation>
-            <relation table="drink" exist="yes">Choix de la boisson</relation>
-            <relation table="option" exist="yes">Choix de l'option: </relation>
-            <relation table="promotion" exist="yes"
-                      control="system"/>>
-        </relations>
     </insert>
     <insert name="accounting">
         <script>

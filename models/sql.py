@@ -159,7 +159,8 @@ class SQLInsertRequest(SQL):
             return relations_dico["has_one"]
 
     def which_many_relations(self, target, tables=True):
-        """Return list of tables related name if target has many relations"""
+        """Return list of tables related name if target has many relations
+        or return through"""
 
         tables_relations = []
         through = ""

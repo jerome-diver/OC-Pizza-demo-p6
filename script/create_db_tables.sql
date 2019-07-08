@@ -348,7 +348,7 @@ CREATE TABLE IF NOT EXISTS public."order"
     user_id bigint NOT NULL,
     address_id bigint NOT NULL,
     promotion_id bigint,
-    date date,
+    date timestamp with time zone DEFAULT now(),
     status order_status NOT NULL DEFAULT 'en attente'::order_status,
     paid boolean NOT NULL DEFAULT false,
     CONSTRAINT order_pkey PRIMARY KEY (id),
