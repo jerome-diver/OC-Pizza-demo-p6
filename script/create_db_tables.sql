@@ -387,10 +387,10 @@ CREATE TABLE IF NOT EXISTS public.order_detail
     order_id bigint NOT NULL,
     pizza_id bigint,
     drink_id bigint,
-    option_id bigint NOT NULL,
-    promotion_id bigint NOT NULL,
+    option_id bigint,
+    promotion_id bigint,
     status pizza_status NOT NULL DEFAULT 'en attente'::pizza_status,
-    size pizza_size NOT NULL DEFAULT 'individuelle'::pizza_size,
+    size pizza_size,
     quantity smallint NOT NULL DEFAULT 1,
     CONSTRAINT order_detail_option_id FOREIGN KEY (option_id)
         REFERENCES public.option (id) MATCH SIMPLE
