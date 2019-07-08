@@ -229,7 +229,14 @@
                       show="username, nom, prenom"> Quel utilisateur passe la commande ? </relation>
             <relation table="address"
                       exist="maybe"
-                      show="a.rue_1, a.cp, a.ville">A quelle addresse:</relation>
+                      show="rue_1, cp, ville"
+                      query="
+                    SELECT DISTINCT a.id, a.rue_1, a.cp, a.ville
+                    FROM public.address AS a,
+                         public.user_addresses_contacts AS uac
+                    WHERE uac.address_id = a.id
+                    AND uac.user_id = %s;">A quelle addresse:
+            </relation>
             <relation table="promotion"
                       exist="yes"
                       show="nom"> Bénéficie d'une promotion sur toute la commande ? </relation>
@@ -239,14 +246,31 @@
                    choose="Quel type d'article voulez-vous ajouter à la commande ? [pizza, boisson] ">
             <relation table="pizza"
                       exist="yes"
-                      show="p.nom">Choix de la pizza: </relation>
+                      show="p.nom"
+                      query="
+                    SELECT DISTINCT p.id, p.nom FROM
+                    public.pizza AS p, public.menus_price mp
+                    WHERE mp.pizza_id = p.id
+                    AND mp.restaurant_id = %s;">Choix de la pizza:
+            </relation>
             <relation table="drink"
                       exist="yes"
-                      show="p.nom, p.packaging">Choix de la boisson :
+                      show="p.nom, p.packaging"
+                      query="
+                    SELECT DISTINCT d.id, d.nom, d.packaging FROM
+                    public.drink AS d, public.menus_price AS mp
+                    WHERE mp.drink_id = d.id
+                    AND mp.restaurant_id = %s;">Choix de la boisson :
             </relation>
             <relation table="option"
                       exist="yes"
-                      show="nom">Choix de l'option: </relation>
+                      show="nom"
+                      query="
+                    SELECT DISTINCT o.id, o.nom FROM
+                    public.option AS o, public.menus_price AS
+                    WHERE mp.option_id = o.id
+                    AND mp.restaurant_id = %s;">Choix de l'option:
+            </relation>
             <relation table="promotion"
                       exist="yes"
                       show="nom">Bénéficie d'une promotion sur cet article ? </relation>

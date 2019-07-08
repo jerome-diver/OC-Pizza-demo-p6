@@ -128,11 +128,18 @@ class SQLInsertRequest(SQL):
                     type = relations.get("type")
                     if type:
                         for relation in relations.findall("relation"):
+                            query = relation.get("query")
+                            request = None
+                            if query:
+                                request = " ".join(query.strip().
+                                                    replace("\n", "").
+                                                    split())
                             dico = dict(
                                 table=relation.get("table"),
                                 question=relation.text,
                                 exist=relation.get("exist"),
-                                show=relation.get("show"))
+                                show=relation.get("show"),
+                                request=request)
                             if type == "has_many":
                                 dico["through"] = relations.get("through")
                             dico["choose"] = relations.get("choose")

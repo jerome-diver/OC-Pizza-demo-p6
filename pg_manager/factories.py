@@ -46,7 +46,7 @@ class Creator:
             id = self._db.request(request, tuple(values), ask=True)
         return int(id[0][0])
 
-    def _create_maybe(self, relation, request=None):
+    def _create_maybe(self, relation, **kwargs):
         """ask from a list of records to choose one (exist=yes)
         or (exist=maybe) possibly create a new one
         or STOP link recording"""
@@ -58,7 +58,7 @@ class Creator:
                     relation["table"],
                     relation["show"],
                     relation["exist"],
-                    request)
+                    **kwargs)
                 answer = input("Faites un choix: ")
                 if relation["exist"] == "maybe" and answer==choices[-1]:
                     Record(relation["table"])
@@ -120,7 +120,7 @@ class Creator:
         question = match.group(1) + "autre " + match.group(2)
         return question
 
-    def _show_existing_records(self, table, fields, exist, req=None):
+    def _show_existing_records(self, table, fields, exist, **kwargs):
         """Print enumerated list of fields 'field' existing 'table' records
             and return a list of id and 'n': [id,.....,'n']"""
 
@@ -129,9 +129,11 @@ class Creator:
         sql = SQLShowRequest()
         sub_request = sql.table(table)
         request = re.sub(r'\*', f"id, {fields}", sub_request) \
-            if not req else req
-        records = self._db.request(request, ask=True)
-        print(records)
+            if "request" not in kwargs or kwargs["request"] is None\
+            else kwargs["request"]
+        records = self._db.request(request, ask=True)\
+            if "values" not in kwargs \
+            else self._db.request(request, kwargs["values"], ask=True)
         if self._observer:
             self._observer.add_debug_message(
                 f"request: {request}\n ==> answer: {records}")
@@ -351,8 +353,6 @@ class NewPizza(Creator):
 class NewRestaurant(Creator):
     """New record restaurant factory"""
 
-    #CHOOSE = re.compile(r'.*\[(.*)\].*', re.IGNORECASE)
-
     def __init__(self, observer):
         super().__init__("restaurant", observer=observer)
         self._observer = observer
@@ -377,13 +377,8 @@ class NewRestaurant(Creator):
             relations = self._entry.has_many
             choose_question = relations[0]["choose"]
             through = relations[0]["through"]
-            cl = self.CHOOSE.match(choose_question).group(1).split(', ')
-            correct = False
-            answer =""
-            while not correct:
-                answer = input(choose_question)
-                correct = bool(answer in cl or "stop")
-            if answer == "stop":
+            answer = self.ask_for_choice(choose_question)
+            if answer == "fin":
                 relation_id = None
             else:
                 if answer == "boisson":
@@ -415,8 +410,6 @@ class NewRestaurant(Creator):
 class NewStock(Creator):
     """New stock record factory"""
 
-    #CHOOSE = re.compile(r'.*\[(.*)\].*', re.IGNORECASE)
-
     def __init__(self, observer):
         super().__init__("stock", observer=observer)
         self._observer = observer
@@ -433,13 +426,8 @@ class NewStock(Creator):
         while relation_id is not None:
             values = [restaurant_id]
             cq = self._entry.has_one[0]["choose"]
-            cl = self.CHOOSE.match(cq).group(1).split(", ")
-            correct = False
-            answer =""
-            while not correct:
-                answer = input(cq)
-                correct = bool(answer in cl or "stop")
-            if answer == "stop":
+            answer = self.ask_for_choice(cq)
+            if answer == "fin":
                 relation_id = None
             else:
                 cl = ["nutriment", "drink"]
@@ -477,20 +465,20 @@ class NewOrder(Creator):
         values = []
         restaurant_id = 0
         through = self._sql.which_many_relations("order", False)
+        user_id = 0
         for relation in self._entry.has_one:
             print(relation["question"])
-            req = None
-            if relation["table"] == "address":
-                req = f"SELECT a.id, {relation['show']} " \
-                    f"FROM public.user AS u, " \
-                    f"     public.user_addresses_contacts AS ua," \
-                    f"     public.address AS a " \
-                    f"WHERE ua.user_id = u.id " \
-                    f"AND ua.address_id = a.id " \
-                    f"AND u.id = {values[-1]};"
-            relation_id = self._create_maybe(relation, req)
+            if relation["table"] != "address":
+                relation_id = self._create_maybe(relation)
             if relation["table"] == "restaurant":
                 restaurant_id = relation_id
+            if relation["table"] == "user":
+                user_id = relation_id
+            if relation["table"] == "address":
+                relation_id = self._create_maybe(
+                    relation,
+                    request=relation["request"],
+                    values=(user_id,))
             values.append(relation_id)
         values += self._get_fields_values_for(self._entry.fields)
         order_id = self._db.request(request, values, ask=True)[0][0]
@@ -506,16 +494,12 @@ class NewOrder(Creator):
                 cl = ["pizza", "drink"]
                 answer = "drink" if answer == "boisson" else "pizza"
                 for relation in self._entry.has_many:
+                    if relation["table"] != "prommotion":
+                        request = relation["request"]
                     if relation["table"] == answer:
-                        rel = relation["table"]
-                        el = relation["show"]
-                        req = f"SELECT DISTINCT p.id, {el} " \
-                            f"FROM public.{rel} as p, " \
-                            f"     public.menus_price as mp, " \
-                            f"     public.restaurant AS r " \
-                            f"WHERE mp.{rel}_id = p.id " \
-                            f"AND mp.restaurant_id = {restaurant_id};"
-                        relation_id = self._create_maybe(relation, req)
+                        relation_id = self._create_maybe(
+                            relation, request=request,
+                            values=(restaurant_id,))
                         if relation_id:
                             self._observer.add_relation_has_one(
                                 relation["table"], relation_id)
@@ -527,7 +511,9 @@ class NewOrder(Creator):
                              " [oui/non] "
                         answer = self.ask_for_choice(cq)
                         if self.YES.match(answer):
-                            option_id = self._create_maybe(relation)
+                            option_id = self._create_maybe(
+                                relation, request=request,
+                                values=(restaurant_id,))
                             self._observer.add_relation_has_many(
                                 "option", option_id)
                             values.append(option_id)
