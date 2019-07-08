@@ -289,30 +289,28 @@
     </insert>
     <insert name="accounting">
         <script>
-
+            INSERT INTO public.accounting
+            (restaurant_id, order_id, nutriment_id, drink_id, label, credit,
+            debit, date_declaration, code_accounting_id)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id;
         </script>
-        <field name="" type=""></field>
-
     </insert>
     <insert name="delivery">
         <script>
-
+            INSERT INTO public.delivery (order_id, date, time_record,
+            time_start, time_end, time_send, time_delivered) RETURNING id;
         </script>
-        <field name="" type=""></field>
-
     </insert>
     <insert name="hand_over">
         <script>
-
+            INSERT INTO public.hand_over (user_id, start, date, description)
+            VALUES  (%s, %s, %s, %s) RETURNING id;
         </script>
-        <field name="" type=""></field>
-
     </insert>
     <insert name="authentication_log">
         <script>
-
+            INSERT INTO pubic.authentication_log (user_id, date_time_login, date_time_logout, ip)
+            VALUES (%s, %s, %s, %s) RETURNING id;
         </script>
-        <field name="" type=""></field>
-
     </insert>
 </sql>
