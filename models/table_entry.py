@@ -48,3 +48,14 @@ class TableEntry():
         """Property to get has_one relations list"""
 
         return self._has_one
+
+    def find_relation(self, table, has_many=False):
+        """return relation target by table name and type of relation"""
+
+        relations  = self._has_one \
+            if not has_many \
+            else self._has_many
+        for relation in relations:
+            if relation["table"] == table:
+                return relation
+        return None

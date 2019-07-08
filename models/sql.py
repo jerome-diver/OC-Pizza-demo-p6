@@ -135,7 +135,7 @@ class SQLInsertRequest(SQL):
                                 show=relation.get("show"))
                             if type == "has_many":
                                 dico["through"] = relations.get("through")
-                                dico["choose"] = relations.get("choose")
+                            dico["choose"] = relations.get("choose")
                             relations_dico[type].append(dico)
                 break
         if extract not in extract_able:
@@ -217,5 +217,5 @@ class SQLShowRequest(SQL):
 
         tables = self._root.find("tables")
         table_ = tables.find(f"table[@name='{table}']")
-        request = table_.text
+        request = " ".join(table_.text.strip().replace("\n", "").split())
         return request

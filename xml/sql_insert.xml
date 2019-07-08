@@ -79,11 +79,9 @@
         <field name="value" type="int" constraint="1-100" control="system"/>
         <field name="date_start"
                type="date"
-               role="gerant"
                exist="maybe">Date de début de promotion ? </field>
         <field name="date_end"
                type="date"
-               role="gerant"
                exist="maybe">Date de fin de promotion ? </field>
         <field name="enabled" role="gerant" exist="maybe">Valide ? </field>
     </insert>
@@ -179,7 +177,8 @@
                       show="nom">Quelle pizza ajouter au menu : </relation>
             <relation table="drink"
                       exist="maybe"
-                      show="nom">Quelle boisson ajouter au menu : </relation>
+                      show="nom, packaging">Quelle boisson ajouter au menu :
+            </relation>
             <relation table="option"
                       exist="maybe"
                       show="nom">Quelle option ajouter au menu : </relation>
@@ -203,9 +202,15 @@
         <field name="unit" type="enum" t_name="unity">Unité: </field>
         <relations type="has_one"
                    choose="Quelle type de denrée ajouter [aliment, boisson]: ">
-            <relation table="restaurant" exist="yes">Restaurent concerné par cet inventaire: </relation>
-            <relation table="nutriment" exist="yes">Aliment concerné: </relation>
-            <relation table="drink" exist="yes">Boisson concerné: </relation>
+            <relation table="restaurant"
+                      exist="yes"
+                      show="nom">Restaurent concerné: </relation>
+            <relation table="nutriment"
+                      exist="yes"
+                      show="nom">Aliment concerné: </relation>
+            <relation table="drink"
+                      exist="yes"
+                      show="nom, packaging">Boisson concerné: </relation>
         </relations>
 
     </insert>
@@ -249,6 +254,13 @@
                       control="system"/>>
         </relations>
     </insert>
+    <insert name="accounting">
+        <script>
+
+        </script>
+        <field name="" type=""></field>
+
+    </insert>
     <insert name="delivery">
         <script>
 
@@ -257,13 +269,6 @@
 
     </insert>
     <insert name="hand_over">
-        <script>
-
-        </script>
-        <field name="" type=""></field>
-
-    </insert>
-    <insert name="accounting">
         <script>
 
         </script>

@@ -267,8 +267,8 @@ CREATE TABLE IF NOT EXISTS public.stock
     quantity numeric(6,2) NOT NULL,
     unit unity NOT NULL,
     CONSTRAINT stock_pkey PRIMARY KEY (id),
-    CONSTRAINT stock_has_uniq_nutriment_drink_restaurant UNIQUE (drink_id, nutriment_id, restaurant_id)
-,
+    CONSTRAINT stock_has_uniq_drink_restaurant UNIQUE (restaurant_id, drink_id),
+    CONSTRAINT stock_has_uniq_restaurant_nutriment UNIQUE (restaurant_id, nutriment_id),
     CONSTRAINT stock_to_drink_id FOREIGN KEY (drink_id)
         REFERENCES public.drink (id) MATCH SIMPLE
         ON UPDATE CASCADE
@@ -287,8 +287,6 @@ TABLESPACE pg_default;
 ALTER TABLE public.stock OWNER to "oc-pizza";
 COMMENT ON TABLE public.stock
     IS 'Liste des produits en stock dans les restaurants.';
-COMMENT ON CONSTRAINT stock_has_uniq_nutriment_drink_restaurant ON public.stock
-    IS 'Unicité sur les entrées restaurant_id, nutriment_id et drink_id.';
 COMMENT ON CONSTRAINT stock_to_drink_id ON public.stock
     IS 'Lien vers les boissons';
 COMMENT ON CONSTRAINT stock_to_restaurant_id ON public.stock

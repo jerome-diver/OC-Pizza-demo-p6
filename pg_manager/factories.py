@@ -78,7 +78,7 @@ class Creator:
         return success
 
     def _get_fields_values_for(self, fields, exception=[]) -> list:
-        """Return values list for fields required"""
+        """Return field parser factories result list values"""
 
         values = list()
         for field in fields:
@@ -116,7 +116,7 @@ class Creator:
         question = match.group(1) + "autre " + match.group(2)
         return question
 
-    def _show_existing_records(self, table, field, exist):
+    def _show_existing_records(self, table, fields, exist):
         """Print enumerated list of fields 'field' existing 'table' records
             and return a list of id and 'n': [id,.....,'n']"""
 
@@ -124,14 +124,16 @@ class Creator:
         print("  0) -- STOP --")
         sql = SQLShowRequest()
         sub_request = sql.table(table)
-        request = re.sub(r'\*', f"id, {field}", sub_request)
+        request = re.sub(r'\*', f"id, {fields}", sub_request)
         records = self._db.request(request, ask=True)
         if self._observer:
             self._observer.add_debug_message(
                 f"request: {request}\n ==> answer: {records}")
         for n, record in enumerate(records):
             choices.append(int(record[0]))
-            string = "%3s) %s" % (n+1, record[1])
+            string = "%3s) " % str(n+1)
+            for i_field in range(1, len(record)):
+                string += f" %s - " % record[i_field]
             print(string)
         if exist == "maybe":
             choices.append("n")
@@ -178,6 +180,8 @@ class Record:
             record = NewPizza(self.OBSERVER)
         if target == "restaurant":
             record = NewRestaurant(self.OBSERVER)
+        if target == "stock":
+            record = NewStock(self.OBSERVER)
         record.process()
 
     def show_messages(self):
@@ -330,8 +334,8 @@ class NewPizza(Creator):
                         success = self._db.request(request,
                                                    tuple(recipe_values))
                         if success:
-                            self._observer.add_relation_link(through,
-                                                             recipe_values)
+                            self._observer.add_relation_link(
+                                through, recipe_values)
                         else:
                             self._observer.add_debug_message(
                                 f"Failed to record link relations {through}")
@@ -359,7 +363,7 @@ class NewRestaurant(Creator):
         restaurant_id = self._db.request(
             request, tuple(values), ask=True)[0][0]
         self._observer.add_record("restaurant", restaurant_id)
-        # Find and record relation has_many through menu_price:
+        # Find and record has_many relation through menu_price:
         relation_id = 0
         while relation_id is not None:
             values = [restaurant_id]
@@ -371,26 +375,81 @@ class NewRestaurant(Creator):
             answer =""
             while not correct:
                 answer = input(choose_question)
-                correct = bool(answer in cl)
-            if answer == "boisson":
-                answer = "drink"
-            cl = ["drink" if x == "boisson" else x for x in cl]
-            menus_price_entry = TableEntry(through)
-            fields_values = [None] if answer != "pizza" else []
-            exception = ["size_pizza"] if answer != "pizza" else []
-            for relation in relations:
-                if relation["table"] == answer:
-                    relation_id = self._create_maybe(relation)
-                    if relation_id:
-                        self._observer.add_relation_has_many(
-                            relation["table"], relation_id)
-                        fields_values += self._get_fields_values_for(
-                                menus_price_entry.fields, exception)
-                        values += [relation_id
-                                   if x == answer
-                                   else None
-                                   for x in cl]
-                        values += fields_values
-                        success = self._record_through(through, values)
-                        if success:
-                            self._observer.add_relation_link(through, values)
+                correct = bool(answer in cl or "stop")
+            if answer == "stop":
+                relation_id = None
+            else:
+                if answer == "boisson":
+                    answer = "drink"
+                cl = ["drink" if x == "boisson" else x for x in cl]
+                menus_price_entry = TableEntry(through)
+                fields_values = [None] if answer != "pizza" else []
+                exception = ["size_pizza"] if answer != "pizza" else []
+                for relation in relations:
+                    if relation["table"] == answer:
+                        relation_id = self._create_maybe(relation)
+                        if relation_id:
+                            self._observer.add_relation_has_many(
+                                relation["table"], relation_id)
+                            fields_values += self._get_fields_values_for(
+                                    menus_price_entry.fields, exception)
+                            values += [relation_id
+                                       if x == answer
+                                       else None
+                                       for x in cl]
+                            values += fields_values
+                            success = self._record_through(
+                                through, values)
+                            if success:
+                                self._observer.add_relation_link(
+                                    through, values)
+
+
+class NewStock(Creator):
+    """New stock record factory"""
+
+    CHOOSE = re.compile(r'.*\[(.*)\].*', re.IGNORECASE)
+
+    def __init__(self, observer):
+        super().__init__("stock", observer=observer)
+        self._observer = observer
+
+    def process(self):
+        """Process new stock record"""
+
+        print("Nouveau ajout de stock\n")
+        restaurant_relation = self._entry.find_relation("restaurant")
+        print(restaurant_relation["question"])
+        restaurant_id = self._create_maybe(restaurant_relation)
+        request = self._entry.request
+        relation_id = 0
+        while relation_id is not None:
+            values = [restaurant_id]
+            cq = self._entry.has_one[0]["choose"]
+            cl = self.CHOOSE.match(cq).group(1).split(", ")
+            correct = False
+            answer =""
+            while not correct:
+                answer = input(cq)
+                correct = bool(answer in cl or "stop")
+            if answer == "stop":
+                relation_id = None
+            else:
+                cl = ["nutriment", "drink"]
+                answer = "drink" if answer == "boisson" else "nutriment"
+                for relation in self._entry.has_one:
+                    if relation["table"] == answer:
+                        relation_id = self._create_maybe(relation)
+                        if relation_id:
+                            self._observer.add_relation_has_one(
+                                relation["table"], relation_id)
+                            values += [relation_id if x == answer
+                                       else None
+                                       for x in cl]
+                            values += self._get_fields_values_for(
+                                self._entry.fields)
+                            stock_id = self._db.request(
+                                request, tuple(values), ask=True)[0][0]
+                            self._observer.add_record(
+                                self.entry, stock_id, values)
+
