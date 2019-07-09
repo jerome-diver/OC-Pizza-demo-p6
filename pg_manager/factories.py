@@ -494,7 +494,7 @@ class NewOrder(Creator):
                 cl = ["pizza", "drink"]
                 answer = "drink" if answer == "boisson" else "pizza"
                 for relation in self._entry.has_many:
-                    if relation["table"] != "prommotion":
+                    if relation["table"] != "promotion":
                         request = relation["request"]
                     if relation["table"] == answer:
                         relation_id = self._create_maybe(

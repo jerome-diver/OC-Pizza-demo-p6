@@ -14,17 +14,37 @@ class OCPizzaCreator():
     def __init__(self):
 
         self._sql = SQLCreateRequest()
+        self._success = ""
+        self._warning = ""
+        self._failed = ""
+
+    @property
+    def success(self):
+        """Property for messages"""
+
+        return self._success
+
+    @property
+    def warning(self):
+        """Property for messages"""
+
+        return self._warning
+
+    @property
+    def failed(self):
+        """Property for messages"""
+
+        return self._failed
 
     def all(self) -> bool:
         """Create all: user, database, types and tables"""
 
-        if self.user():
-            if self.database():
-                if self.types():
-                    return self.tables()
-        return False
+        self.user()
+        self.database()
+        self.types()
+        self.tables()
 
-    def user(self) -> bool:
+    def user(self):
         """Create user/role for database oc-pizza if not exists"""
 
         cmd_user_exist = self.psql_call + [self._sql.user['test']]
@@ -34,15 +54,11 @@ class OCPizzaCreator():
             try:
                 call(cmd_create_user)
             except Exception as err:
-                print(err)
-                return False
-            else:
-                return True
+                self._failed += f"{err}\n"
         else:
-            print("user exist already")
-            return False
+            self._warning += "user exist already\n"
 
-    def database(self) -> bool:
+    def database(self):
         """Create database oc-pizza if not exists"""
 
         cmd_create_db = self._sql.command_list_for("database")
@@ -52,15 +68,11 @@ class OCPizzaCreator():
             try:
                 call(cmd_create_db)
             except Exception as err:
-                print(err)
-                return False
-            else:
-                return True
+                self._failed += f"{err}\n"
         else:
-            print("db exist already")
-            return False
+            self._warning += "database oc-pizza exist already"
 
-    def types(self) -> bool:
+    def types(self):
         """Create 6 types to be used inside tables for
         oc-pizza database if not exists"""
 
@@ -69,17 +81,15 @@ class OCPizzaCreator():
         for name, type_script in types.items():
             try:
                 test = db.request(type_script)
-            except Exception as error:
-                print("no one type can be create")
-                return False
+            except Exception as err:
+                self._failed += f"{err}\n"
             else:
                 if not test:
-                    print("failed to create type:", name)
+                    self._failed += f"failed to create type: {name}\n"
                 else:
-                    print("success to create type:", name)
-        return True
+                    self._success += f"success to create type: {name}\n"
 
-    def tables(self) -> bool:
+    def tables(self):
         """Create 21 tables inside database oc-pizza if not exists"""
 
         db = Database()
@@ -87,12 +97,10 @@ class OCPizzaCreator():
         for name, table_script in tables.items():
             try:
                 test = db.request(table_script)
-            except Exception as error:
-                print("no one table can be create")
-                return False
+            except Exception as err:
+                self._failed += f"{err}\n"
             else:
                 if not test:
-                    print("failed to create table:", name)
+                    self._failed += f"failed to create table: {name}\n"
                 else:
-                    print("success to create table:", name)
-        return True
+                    self._success += f"success to create table: {name}\n"

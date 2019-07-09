@@ -21,25 +21,26 @@ def initialize(target):
 
     from pg_manager import OCPizzaCreator
     create = OCPizzaCreator()
-    success = False
     helped = False
     if target == "all":
-        success = create.all()
+        create.all()
     elif target == "user":
-        success = create.user()
+        create.user()
     elif target == "database":
-        success = create.database()
+        create.database()
     elif target == 'types':
-        success = create.types()
+        create.types()
     elif target == 'tables':
-        success = create.tables()
+        create.tables()
     else:
         click.secho("You have to use a --target option (look at --help)",
                     fg='yellow')
         helped = True
     if not helped:
-        click.secho("SUCCESS" if success else "FAILED",
-                    fg='green' if success else 'red')
+        click.secho(create.success, fg='green')
+        click.secho(create.warning, fg='yellow')
+        click.secho(create.failed, fg='red')
+
 
 @cli.command()
 @click.option("--target",

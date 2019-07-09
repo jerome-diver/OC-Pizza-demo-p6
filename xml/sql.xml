@@ -66,7 +66,7 @@
     </types>
     <tables>
         <table name='user'>
-          CREATE TABLE public."user"
+          CREATE TABLE IF NOT EXISTS public."user"
           (
           id bigserial,
           nom character varying NOT NULL,
@@ -98,8 +98,7 @@
           COMMENT ON COLUMN public."user".password
             IS 'mot de passe "hashé" et ducis (salt)';
           COMMENT ON COLUMN public."user".enabled
-            IS 'L''utilisateur peut-il se connecter ? (il le peut quand il a répondu à son email de confirmation)
-            Par défaut, il ne peut pas (False).';
+            IS 'L''utilisateur peut-il se connecter ? (il le peut quand il a répondu à son email de confirmation) Par défaut, il ne peut pas (False).';
           COMMENT ON CONSTRAINT unique_username ON public."user"
             IS 'username est unique';
           COMMENT ON CONSTRAINT unique_photo_url ON public."user"
@@ -127,18 +126,17 @@
                 IS 'Liste d''adresses.';
         </table>
         <table name="contact">
-            CREATE TABLE public.contact
+            CREATE TABLE IF NOT EXISTS public.contact
             (
             id bigserial,
             data character varying COLLATE pg_catalog."default" NOT NULL,
             type contact_type NOT NULL,
-            CONSTRAINT contact_pkey PRIMARY KEY (id)
+            CONSTRAINT contact_pkey PRIMARY KEY (id),
             CONSTRAINT contact_uniq_data UNIQUE (data)
             ) WITH ( OIDS = FALSE )
             TABLESPACE pg_default;
             ALTER TABLE public.contact OWNER to "oc-pizza";
-            COMMENT ON TABLE public.contact
-                IS 'Liste de contacts';
+            COMMENT ON TABLE public.contact IS 'Liste de contacts';
         </table>
         <table name="user_addresses_contacts">
             CREATE TABLE IF NOT EXISTS public.user_addresses_contacts
@@ -329,6 +327,25 @@
             COMMENT ON CONSTRAINT pizza_uniq_photo_url ON public.pizza
                 IS 'le nom du fichier de la photo est unique (il est généré par le système)'
         </table>
+        <table name="option">
+            CREATE TABLE IF NOT EXISTS public.option
+            (
+            id bigserial,
+            nutriment_id bigint NOT NULL,
+            description text COLLATE pg_catalog."default" NOT NULL,
+            quantity integer NOT NULL,
+            unit unity NOT NULL,
+            CONSTRAINT option_pkey PRIMARY KEY (id),
+            CONSTRAINT option_nutriment_id FOREIGN KEY (nutriment_id)
+            REFERENCES public.nutriment (id) MATCH SIMPLE ON UPDATE NO ACTION ON DELETE NO ACTION
+            ) WITH ( OIDS = FALSE )
+            TABLESPACE pg_default;
+            ALTER TABLE public.option OWNER to "oc-pizza";
+            COMMENT ON TABLE public.option
+            IS 'Options possibles (extra sur pizza)';
+            COMMENT ON CONSTRAINT option_nutriment_id ON public.option
+            IS 'Lien vers l''aliment';
+        </table>
         <table name="recipe">
             CREATE TABLE IF NOT EXISTS public.recipe
             (
@@ -391,21 +408,20 @@
             (
             order_id bigint NOT NULL,
             pizza_id bigint,
+            drink_id bigint,
+            option_id bigint,
             promotion_id bigint,
             status pizza_status NOT NULL DEFAULT 'en attente'::pizza_status,
-            option_id bigint,
             quantity smallint NOT NULL DEFAULT 1,
             size pizza_size,
-            drink_id bigint,
-            CONSTRAINT order_detail_option_id FOREIGN KEY (option_id)
-                REFERENCES public.option (id) MATCH SIMPLE ON UPDATE NO ACTION ON DELETE NO ACTION
-            ) WITH ( OIDS = FALSE );
-            CONSTRAINT order_detail_drink_id FOREIGN KEY (drink_id)
-                REFERENCES public.drink (id) MATCH SIMPLE ON UPDATE NO ACTION ON DELETE NO ACTION,
             CONSTRAINT order_detail_order_id FOREIGN KEY (order_id)
                 REFERENCES public."order" (id) MATCH SIMPLE ON UPDATE NO ACTION ON DELETE NO ACTION,
             CONSTRAINT order_detail_pizza_id FOREIGN KEY (pizza_id)
                 REFERENCES public.pizza (id) MATCH SIMPLE ON UPDATE NO ACTION ON DELETE NO ACTION,
+            CONSTRAINT order_detail_drink_id FOREIGN KEY (drink_id)
+                REFERENCES public.drink (id) MATCH SIMPLE ON UPDATE NO ACTION ON DELETE NO ACTION,
+            CONSTRAINT order_detail_option_id FOREIGN KEY (option_id)
+                REFERENCES public.option (id) MATCH SIMPLE ON UPDATE NO ACTION ON DELETE NO ACTION,
             CONSTRAINT order_details_promotion_id FOREIGN KEY (promotion_id)
                 REFERENCES public.promotion (id) MATCH SIMPLE ON UPDATE NO ACTION ON DELETE NO ACTION,
             CONSTRAINT order_detail_drink_xor_pizza CHECK ((pizza_id IS NULL) != (drink_id IS NULL)) NOT VALID
@@ -424,25 +440,6 @@
                 IS 'Lien vers la promotion éventuelle';
             COMMENT ON CONSTRAINT order_detail_drink_xor_pizza ON public.order_detail
                 IS 'Le détail de commande concerne une pizza OU une boisson.';
-        </table>
-        <table name="option">
-            CREATE TABLE IF NOT EXISTS public.option
-            (
-            id bigserial,
-            nutriment_id bigint NOT NULL,
-            description text COLLATE pg_catalog."default" NOT NULL,
-            quantity integer NOT NULL,
-            unit unity NOT NULL,
-            CONSTRAINT option_pkey PRIMARY KEY (id),
-            CONSTRAINT option_nutriment_id FOREIGN KEY (nutriment_id)
-                REFERENCES public.nutriment (id) MATCH SIMPLE ON UPDATE NO ACTION ON DELETE NO ACTION
-            ) WITH ( OIDS = FALSE )
-            TABLESPACE pg_default;
-            ALTER TABLE public.option OWNER to "oc-pizza";
-            COMMENT ON TABLE public.option
-                IS 'Options possibles (extra sur pizza)';
-            COMMENT ON CONSTRAINT option_nutriment_id ON public.option
-                IS 'Lien vers l''aliment';
         </table>
         <table name="menus_price">
             CREATE TABLE IF NOT EXISTS public.menus_price
@@ -472,19 +469,18 @@
             CONSTRAINT price_pizza_id_and_pizza_size CHECK
                 (pizza_id IS NULL AND size_pizza IS NULL
                  OR pizza_id IS NOT NULL AND size_pizza IS NOT NULL) NOT VALID,
-            CONSTRAINT resaturant_uniq_price UNIQUE
-                (pizza_id, drink_id, option_id, size_pizza, restaurant_id)
+            CONSTRAINT price_restaurant_uniq_pizza_size UNIQUE (pizza_id, size_pizza, restaurant_id),
+            CONSTRAINT price_restaurant_uniq_drink_size UNIQUE (drink_id, restaurant_id),
+            CONSTRAINT price_restaurant_uniq_option_size UNIQUE (option_id, restaurant_id)
             ) WITH ( OIDS = FALSE )
             TABLESPACE pg_default;
-            ALTER TABLE public.price OWNER to "oc-pizza";
-            COMMENT ON TABLE public.price IS 'La liste des prix';
-            COMMENT ON CONSTRAINT price_drink_id ON public.price IS 'Lien vers la boisson';
-            COMMENT ON CONSTRAINT price_option_id ON public.price IS 'Lien vers l''option';
-            COMMENT ON CONSTRAINT price_pizza_id ON public.price IS 'Lien ver la pizza';
-            COMMENT ON CONSTRAINT price_pizza_xor_drink_xor_option ON public.price
+            ALTER TABLE public.menus_price OWNER to "oc-pizza";
+            COMMENT ON TABLE public.menus_price IS 'La liste des prix';
+            COMMENT ON CONSTRAINT price_drink_id ON public.menus_price IS 'Lien vers la boisson';
+            COMMENT ON CONSTRAINT price_option_id ON public.menus_price IS 'Lien vers l''option';
+            COMMENT ON CONSTRAINT price_pizza_id ON public.menus_price IS 'Lien vers la pizza';
+            COMMENT ON CONSTRAINT price_pizza_xor_drink_xor_option ON public.menus_price
                 IS 'Au choix, le prix ne peut concerner que l''un ou l''autre: une pizza, une boisson ou une option';
-            COMMENT ON CONSTRAINT price_pizza_id_and_pizza_size ON public.price
-                IS 'Quand il y a un lien vers une pizza, il doit y avoir une dimension de pizza fourni pour obtenir un prix.';
         </table>
         <table name="code_accounting">
             CREATE TABLE IF NOT EXISTS public.code_accounting
@@ -513,7 +509,6 @@
             date_record date NOT NULL,
             date_declaration date,
             code_accounting__id bigint NOT NULL,
-            order_id bigint,
             CONSTRAINT accounting_pkey PRIMARY KEY (id),
             CONSTRAINT accounting_code_accounting_id FOREIGN KEY (code_accounting__id)
                 REFERENCES public.code_accounting (id) MATCH SIMPLE ON UPDATE NO ACTION ON DELETE NO ACTION,
