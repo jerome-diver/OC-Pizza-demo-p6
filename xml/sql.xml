@@ -311,9 +311,9 @@
             (
             id bigserial,
             nom character varying COLLATE pg_catalog."default" NOT NULL,
+            description text COLLATE pg_catalog."default" NOT NULL,
             thumb bytea NOT NULL,
             photo_url character varying COLLATE pg_catalog."default" NOT NULL,
-            description text COLLATE pg_catalog."default" NOT NULL,
             CONSTRAINT pizza_pkey PRIMARY KEY (id),
             CONSTRAINT pizza_uniq_nom UNIQUE (nom),
             CONSTRAINT pizza_uniq_photo_url UNIQUE (photo_url)

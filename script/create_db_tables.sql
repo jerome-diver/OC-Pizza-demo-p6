@@ -96,7 +96,7 @@ TABLESPACE pg_default;
 ALTER TABLE public.address OWNER to "oc-pizza";
 COMMENT ON TABLE public.address
     IS 'Liste d''adresses.';
-CREATE TABLE public.contact
+CREATE TABLE IF NOT EXISTS public.contact
 (
     id bigserial,
     type contact_type NOT NULL,
@@ -106,8 +106,7 @@ CREATE TABLE public.contact
 ) WITH ( OIDS = FALSE )
 TABLESPACE pg_default;
 ALTER TABLE public.contact OWNER to "oc-pizza";
-COMMENT ON TABLE public.contact
-    IS 'Liste de contacts';
+COMMENT ON TABLE public.contact IS 'Liste de contacts';
 /* Create relational table user_addresses_contacts */
 CREATE TABLE IF NOT EXISTS public.user_addresses_contacts
 (
@@ -298,9 +297,9 @@ CREATE TABLE IF NOT EXISTS public.pizza
 (
     id bigserial,
     nom character varying COLLATE pg_catalog."default" NOT NULL,
+    description text COLLATE pg_catalog."default" NOT NULL,
     thumb bytea NOT NULL,
     photo_url character varying COLLATE pg_catalog."default" NOT NULL,
-    description text COLLATE pg_catalog."default" NOT NULL,
     CONSTRAINT pizza_pkey PRIMARY KEY (id),
     CONSTRAINT pizza_uniq_nom UNIQUE (nom),
     CONSTRAINT pizza_uniq_photo_url UNIQUE (photo_url)
@@ -313,7 +312,27 @@ COMMENT ON CONSTRAINT pizza_uniq_nom ON public.pizza
     IS 'le nom de la pizza est unique';
 COMMENT ON CONSTRAINT pizza_uniq_photo_url ON public.pizza
     IS 'le nom du fichier de la photo est unique (il est généré par le système)'
-
+/*  Create table option */
+CREATE TABLE IF NOT EXISTS public.option
+(
+    id bigserial,
+    nutriment_id bigint NOT NULL,
+    nom character varying NOT NULL,
+    description text COLLATE pg_catalog."default" NOT NULL,
+    quantity integer NOT NULL,
+    unit unity NOT NULL,
+    CONSTRAINT option_pkey PRIMARY KEY (id),
+    CONSTRAINT option_nutriment_id FOREIGN KEY (nutriment_id)
+        REFERENCES public.nutriment (id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+) WITH ( OIDS = FALSE )
+TABLESPACE pg_default;
+ALTER TABLE public.option OWNER to "oc-pizza";
+COMMENT ON TABLE public.option
+    IS 'Options possibles (extra sur pizza)';
+COMMENT ON CONSTRAINT option_nutriment_id ON public.option
+    IS 'Lien vers l''aliment';
 /*  Create table recipe */
 CREATE TABLE IF NOT EXISTS public.recipe
 (
@@ -428,29 +447,8 @@ COMMENT ON CONSTRAINT order_details_promotion_id ON public.order_detail
     IS 'Lien vers la promotion éventuelle';
 COMMENT ON CONSTRAINT order_detail_drink_xor_pizza ON public.order_detail
     IS 'Le détail de commande concerne une pizza OU une boisson.';
-/*  Create table option */
-CREATE TABLE IF NOT EXISTS public.option
-(
-    id bigserial,
-    nutriment_id bigint NOT NULL,
-    nom character varying NOT NULL,
-    description text COLLATE pg_catalog."default" NOT NULL,
-    quantity integer NOT NULL,
-    unit unity NOT NULL,
-    CONSTRAINT option_pkey PRIMARY KEY (id),
-    CONSTRAINT option_nutriment_id FOREIGN KEY (nutriment_id)
-        REFERENCES public.nutriment (id) MATCH SIMPLE
-        ON UPDATE NO ACTION
-        ON DELETE NO ACTION
-) WITH ( OIDS = FALSE )
-TABLESPACE pg_default;
-ALTER TABLE public.option OWNER to "oc-pizza";
-COMMENT ON TABLE public.option
-    IS 'Options possibles (extra sur pizza)';
-COMMENT ON CONSTRAINT option_nutriment_id ON public.option
-    IS 'Lien vers l''aliment';
 /*  Create table menus_price */
-CREATE TABLE IF NOT EXISTS public.price
+CREATE TABLE IF NOT EXISTS public.menus_price
 (
     restaurant_id bigint NOT NULL,
     pizza_id bigint,
@@ -508,13 +506,13 @@ CREATE TABLE IF NOT EXISTS public.accounting
     restaurant_id bigint NOT NULL,
     nutriment_id bigint,
     drink_id bigint,
+    order_id bigint,
     label character varying COLLATE pg_catalog."default",
     credit numeric(7,2),
     debit numeric(7,2),
     date_record date NOT NULL,
     date_declaration date,
     code_accounting__id bigint NOT NULL,
-    order_id bigint,
     CONSTRAINT accounting_pkey PRIMARY KEY (id),
     CONSTRAINT accounting_code_accounting_id FOREIGN KEY (code_accounting__id)
         REFERENCES public.code_accounting (id) MATCH SIMPLE
