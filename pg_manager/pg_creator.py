@@ -15,15 +15,16 @@ class OCPizzaCreator():
 
         self._sql = SQLCreateRequest()
 
-    def all(self):
+    def all(self) -> bool:
         """Create all: user, database, types and tables"""
 
         if self.user():
             if self.database():
                 if self.types():
-                    self.tables()
+                    return self.tables()
+        return False
 
-    def user(self):
+    def user(self) -> bool:
         """Create user/role for database oc-pizza if not exists"""
 
         cmd_user_exist = self.psql_call + [self._sql.user['test']]
@@ -35,11 +36,13 @@ class OCPizzaCreator():
             except Exception as err:
                 print(err)
                 return False
+            else:
+                return True
         else:
             print("user exist already")
-        return True
+            return False
 
-    def database(self):
+    def database(self) -> bool:
         """Create database oc-pizza if not exists"""
 
         cmd_create_db = self._sql.command_list_for("database")
@@ -51,11 +54,13 @@ class OCPizzaCreator():
             except Exception as err:
                 print(err)
                 return False
+            else:
+                return True
         else:
             print("db exist already")
-        return True
+            return False
 
-    def types(self):
+    def types(self) -> bool:
         """Create 6 types to be used inside tables for
         oc-pizza database if not exists"""
 
@@ -74,8 +79,8 @@ class OCPizzaCreator():
                     print("success to create type:", name)
         return True
 
-    def tables(self):
-        """Create 24 tables inside database oc-pizza if not exists"""
+    def tables(self) -> bool:
+        """Create 21 tables inside database oc-pizza if not exists"""
 
         db = Database()
         tables = self._sql.tables
@@ -84,8 +89,10 @@ class OCPizzaCreator():
                 test = db.request(table_script)
             except Exception as error:
                 print("no one table can be create")
+                return False
             else:
                 if not test:
                     print("failed to create table:", name)
                 else:
                     print("success to create table:", name)
+        return True
