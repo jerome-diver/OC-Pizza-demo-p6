@@ -311,7 +311,7 @@ COMMENT ON TABLE public.pizza
 COMMENT ON CONSTRAINT pizza_uniq_nom ON public.pizza
     IS 'le nom de la pizza est unique';
 COMMENT ON CONSTRAINT pizza_uniq_photo_url ON public.pizza
-    IS 'le nom du fichier de la photo est unique (il est généré par le système)'
+    IS 'le nom du fichier de la photo est unique (il est généré par le système)';
 /*  Create table option */
 CREATE TABLE IF NOT EXISTS public.option
 (
@@ -414,7 +414,7 @@ CREATE TABLE IF NOT EXISTS public.order_detail
     CONSTRAINT order_detail_option_id FOREIGN KEY (option_id)
         REFERENCES public.option (id) MATCH SIMPLE
         ON UPDATE NO ACTION
-        ON DELETE NO ACTION
+        ON DELETE NO ACTION,
     CONSTRAINT order_detail_drink_id FOREIGN KEY (drink_id)
         REFERENCES public.drink (id) MATCH SIMPLE
         ON UPDATE NO ACTION
