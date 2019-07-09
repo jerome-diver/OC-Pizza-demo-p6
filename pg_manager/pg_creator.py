@@ -69,6 +69,8 @@ class OCPizzaCreator():
                 call(cmd_create_db)
             except Exception as err:
                 self._failed += f"{err}\n"
+            else:
+                self._success += "Database oc-pizza created"
         else:
             self._warning += "database oc-pizza exist already"
 

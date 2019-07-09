@@ -72,12 +72,14 @@ def create(target, entry_list, from_csv, debug):
         """, fg='blue')
     elif target:
         if from_csv:
+            # Only for code_accounting actually
+            # (because PCG has more than 2000 entries)
             new_records = Record(target, file=from_csv, file_type="csv")
         else:
             new_records = Record(target)
         click.secho(new_records.show_messages(), fg='green')
         if debug:
-            click.secho(new_records.show_debug(), fg='red')
+            click.secho(new_records.show_debug(), fg='yellow')
     else:
         click.secho("""
         You have to use one option:
