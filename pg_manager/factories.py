@@ -294,7 +294,6 @@ class NewHasOne(Creator):
                 else:
                     values.append(None)
             request = self._entry.request
-            print("REQUEST:", request, "\nVALUES:", values)
             id = self._db.request(request, tuple(values), ask=True)
             self._observer.add_record(str(self.entry),
                                       int(id[0][0]),

@@ -67,10 +67,11 @@ les cas d'utilisation):
 ```bash
 demo_oc6 create --entry_list
 ```
-Pour créer un enregistrement (dépendant d'un cas d'utilisation et par 
+Pour créer un enregistrement avec une vue sur la syntaxe SQL utlisée en 
+debug mode (dépendant d'un cas d'utilisation et par 
 exemple pour enregistrer un utilisateur):
 ```bash
-demo_oc6 create --table user
+demo_oc6 create --table user --debug
 ```
 ## Exemple
-![video](./pictures/create_pizza.mp4 "exemple")
+![image](./pictures/create_pizza.gif "exemple")
