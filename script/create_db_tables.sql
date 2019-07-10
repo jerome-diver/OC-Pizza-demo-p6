@@ -322,6 +322,7 @@ CREATE TABLE IF NOT EXISTS public.option
     quantity integer NOT NULL,
     unit unity NOT NULL,
     CONSTRAINT option_pkey PRIMARY KEY (id),
+    CONSTRAINT pizza_uniq_nom UNIQUE (nom),
     CONSTRAINT option_nutriment_id FOREIGN KEY (nutriment_id)
         REFERENCES public.nutriment (id) MATCH SIMPLE
         ON UPDATE NO ACTION

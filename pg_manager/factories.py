@@ -294,6 +294,7 @@ class NewHasOne(Creator):
                 else:
                     values.append(None)
             request = self._entry.request
+            print("REQUEST:", request, "\nVALUES:", values)
             id = self._db.request(request, tuple(values), ask=True)
             self._observer.add_record(str(self.entry),
                                       int(id[0][0]),
@@ -381,12 +382,12 @@ class NewRestaurant(Creator):
             if answer == "fin":
                 relation_id = None
             else:
-                if answer == "boisson":
-                    answer = "drink"
-                cl = ["drink" if x == "boisson" else x for x in cl]
+                cl = re.match(r'.*\[(.*)\].*',
+                              choose_question).group(1).split(", ")
                 menus_price_entry = TableEntry(through)
                 fields_values = [None] if answer != "pizza" else []
                 exception = ["size_pizza"] if answer != "pizza" else []
+                answer = "drink" if answer == "boisson" else answer
                 for relation in relations:
                     if relation["table"] == answer:
                         relation_id = self._create_maybe(relation)

@@ -332,10 +332,12 @@
             (
             id bigserial,
             nutriment_id bigint NOT NULL,
+            nom character varying COLLATE pg_catalog."default" NOT NULL,
             description text COLLATE pg_catalog."default" NOT NULL,
             quantity integer NOT NULL,
             unit unity NOT NULL,
             CONSTRAINT option_pkey PRIMARY KEY (id),
+            CONSTRAINT pizza_uniq_nom UNIQUE (nom),
             CONSTRAINT option_nutriment_id FOREIGN KEY (nutriment_id)
             REFERENCES public.nutriment (id) MATCH SIMPLE ON UPDATE NO ACTION ON DELETE NO ACTION
             ) WITH ( OIDS = FALSE )

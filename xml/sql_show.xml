@@ -54,12 +54,6 @@
         <table name="hand_over">
             SELECT * FROM public.hand_over
         </table>
-        <table name="menu_drink">
-            SELECT * FROM public.menu_drink
-        </table>
-        <table name="menu_pizza">
-            SELECT * FROM public.menu_pizza
-        </table>
         <table name="nutriment">
             SELECT * FROM public.nutriment
         </table>
@@ -72,14 +66,11 @@
         <table name="order_detail">
             SELECT * FROM public.order_detail
         </table>
-        <table name="order_detail_option">
-            SELECT * FROM public.order_detail_option
-        </table>
         <table name="pizza">
             SELECT * FROM public.pizza
         </table>
-        <table name="price">
-            SELECT * FROM public.price
+        <table name="menus_price">
+            SELECT * FROM public.menus_price
         </table>
         <table name="promotion">
             SELECT * FROM public.promotion

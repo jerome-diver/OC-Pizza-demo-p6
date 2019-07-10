@@ -124,7 +124,7 @@
         <script>
             INSERT INTO public.option
             (nom, description, quantity, unit, nutriment_id)
-            VALUES (%s, %s, %s, %s) RETURNING id;
+            VALUES (%s, %s, %s, %s, %s) RETURNING id;
         </script>
         <field name="nom" type="varchar">Nom de l'option: </field>
         <field name="description" type="varchar">Description de l'option: </field>
