@@ -41,7 +41,11 @@ l'application est équipé d'un manuel d'aide succinct:
 demo_oc6 --help
 demo_oc6 create --help
 ```
-Pour voir le contenu de la base (les tables):
+Pour créer la base de donnée et tout ce qu'elle requière:
+```bash
+demo_oc6 initialize --traget all
+```
+Pour voir la structure de la base (les tables):
 ```bash
 demo_oc6 inspect --tables
 ```
@@ -49,3 +53,24 @@ Pour voir les champs d'une table ("user" par exemple):
 ```bash
 demo_oc6 inspect --table user
 ```
+Pour voir le contenu d'une table (restaurant par exemple):
+```bash
+demo_oc6 show --table restaurant
+```
+L'option 'inline' permet d'afficher chaque enregistrement de la base dans 
+une section et non pas dans une ligne de tableau
+```bash
+demo_oc6 show --table restaurant --inline
+```
+Pour lister les entrées possibles dans la base (suivant 
+les cas d'utilisation):
+```bash
+demo_oc6 create --entry_list
+```
+Pour créer un enregistrement (dépendant d'un cas d'utilisation et par 
+exemple pour enregistrer un utilisateur):
+```bash
+demo_oc6 create --table user
+```
+## Exemple
+![video](./pictures/create_pizza.mp4 "exemple")
