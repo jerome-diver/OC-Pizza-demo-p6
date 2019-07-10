@@ -27,7 +27,7 @@ privilégié
 - un serveur de base de données Postgresql actif
 - Python en version 3.7 minimum
 - pipenv installé et configuré
-##Installation
+## Installation
 un fichier setup.py permet d'installer l'application sur vôtre système
 ```bash
 pipenv install
